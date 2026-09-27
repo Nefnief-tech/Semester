@@ -29,6 +29,16 @@ jobs:
         working-directory: ios
         run: npx expo prebuild -p ios --no-install
 
+      - name: Locate native project
+        id: native
+        working-directory: ios
+        run: |
+          if [ -f Podfile ]; then
+            echo "dir=." >> "$GITHUB_OUTPUT"
+          else
+            echo "dir=ios" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Disable expo-updates dev-client autodetection
         # this is a production app — no expo-dev-client is installed, and the
         # podspec's probe crashes pod install when the module is missing
@@ -36,22 +46,22 @@ jobs:
         run: |
           perl -0777 -pi -e 's/use_dev_client = false\nbegin\n.*?\nend\n/use_dev_client = false\n/s' \
             node_modules/expo-updates/ios/EXUpdates.podspec
-          grep -A1 "use_dev_client = false" node_modules/expo-updates/ios/EXUpdates.podspec | head -2
 
       - name: Install CocoaPods
         working-directory: ios
-        run: pod install
+        run: pod install ${{ steps.native.outputs.dir == 'ios' && ' --project-directory=ios' || '' }}
 
       - name: Build unsigned device app
         working-directory: ios
         run: |
           set -o pipefail
+          NATIVE_DIR="${{ steps.native.outputs.dir }}"
           xcodebuild \
-            -workspace Semester.xcworkspace \
+            -workspace "$NATIVE_DIR/Semester.xcworkspace" \
             -scheme Semester \
             -configuration Release \
             -sdk iphoneos \
-            -derivedDataPath build \
+            -derivedDataPath "$NATIVE_DIR/build" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
@@ -60,8 +70,9 @@ jobs:
 
       - name: Package unsigned .ipa
         run: |
+          NATIVE_DIR="${{ steps.native.outputs.dir }}"
           mkdir Payload
-          cp -R ios/build/Build/Products/Release-iphoneos/Semester.app Payload/
+          cp -R "ios/$NATIVE_DIR/build/Build/Products/Release-iphoneos/Semester.app" Payload/
           zip -qry Semester-unsigned.ipa Payload
           ls -la Semester-unsigned.ipa
 
