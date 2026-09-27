@@ -29,12 +29,21 @@ jobs:
         working-directory: ios
         run: npx expo prebuild -p ios --no-install
 
+      - name: Disable expo-updates dev-client autodetection
+        # this is a production app — no expo-dev-client is installed, and the
+        # podspec's probe crashes pod install when the module is missing
+        working-directory: ios
+        run: |
+          perl -0777 -pi -e 's/use_dev_client = false\nbegin\n.*?\nend\n/use_dev_client = false\n/s' \
+            node_modules/expo-updates/ios/EXUpdates.podspec
+          grep -A1 "use_dev_client = false" node_modules/expo-updates/ios/EXUpdates.podspec | head -2
+
       - name: Install CocoaPods
-        working-directory: ios/ios
+        working-directory: ios
         run: pod install
 
       - name: Build unsigned device app
-        working-directory: ios/ios
+        working-directory: ios
         run: |
           set -o pipefail
           xcodebuild \
@@ -52,7 +61,7 @@ jobs:
       - name: Package unsigned .ipa
         run: |
           mkdir Payload
-          cp -R ios/ios/build/Build/Products/Release-iphoneos/Semester.app Payload/
+          cp -R ios/build/Build/Products/Release-iphoneos/Semester.app Payload/
           zip -qry Semester-unsigned.ipa Payload
           ls -la Semester-unsigned.ipa
 
