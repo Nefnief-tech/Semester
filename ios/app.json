@@ -1,0 +1,88 @@
+{
+  "expo": {
+    "name": "Semester",
+    "slug": "semester",
+    "version": "1.0.0",
+    "scheme": "semester",
+    "orientation": "all",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#F5F2EA",
+    "platforms": [
+      "ios"
+    ],
+    "ios": {
+      "bundleIdentifier": "com.semesterapp.semester",
+      "buildNumber": "1",
+      "supportsTablet": true,
+      "requireFullScreen": false,
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "UISupportedInterfaceOrientations": [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationPortraitUpsideDown",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight",
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationPortraitUpsideDown",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight"
+        ],
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "backgroundColor": "#F5F2EA",
+      "dark": {
+        "image": "./assets/splash-icon.png",
+        "backgroundColor": "#17150F"
+      }
+    },
+    "plugins": [
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Fraunces-VF.ttf",
+            "./assets/fonts/Fraunces-Italic-VF.ttf",
+            "./assets/fonts/InstrumentSans-VF.ttf",
+            "./assets/fonts/IBMPlexMono-Regular.ttf",
+            "./assets/fonts/IBMPlexMono-Medium.ttf",
+            "./assets/fonts/IBMPlexMono-SemiBold.ttf",
+            "./assets/fonts/MaterialSymbolsOutlined.ttf"
+          ]
+        }
+      ],
+      "expo-notifications",
+      "expo-document-picker",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "backgroundColor": "#F5F2EA",
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#17150F"
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "2550d479-ded8-4ffc-80fe-76a8399b9eaa"
+      }
+    },
+    "owner": "nefnief",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/2550d479-ded8-4ffc-80fe-76a8399b9eaa"
+    },
+    "android": {}
+  }
+}
