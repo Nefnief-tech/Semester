@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../appwrite/sync.dart';
@@ -39,6 +41,43 @@ List<int> _subPeriods(String period) {
 String _subjectColor(String name, Map<String, String> colorsByName) =>
     colorsByName[name.toLowerCase()] ?? PALETTE[name.length % PALETTE.length];
 
+/* ---------------- now / up next ---------------- */
+
+/// one timetable entry with a parsed time range (minutes since midnight)
+class _Slot {
+  final TimetableEntry entry;
+  final int startMin;
+  final int endMin;
+  const _Slot(this.entry, this.startMin, this.endMin);
+}
+
+/// parses "08:00 - 08:45" / "8:00–8:45" / "08.00" — a missing end time
+/// defaults to a 45-minute lesson; returns null when unparseable/nonsense
+_Slot? _parseSlot(TimetableEntry e) {
+  final m = RegExp(
+    r'(\d{1,2})\s*[:.]\s*(\d{2})\s*(?:[-–—]\s*(\d{1,2})\s*[:.]\s*(\d{2}))?',
+  ).firstMatch(e.time ?? '');
+  if (m == null) return null;
+  final sh = int.tryParse(m.group(1)!);
+  final sm = int.tryParse(m.group(2)!);
+  if (sh == null || sm == null || sh > 23 || sm > 59) return null;
+  final eh = m.group(3) == null ? null : int.tryParse(m.group(3)!);
+  final em = m.group(4) == null ? null : int.tryParse(m.group(4)!);
+  int endMin;
+  if (eh != null && em != null && eh <= 24 && em <= 59) {
+    endMin = eh * 60 + em;
+  } else {
+    endMin = sh * 60 + sm + 45;
+  }
+  final startMin = sh * 60 + sm;
+  if (endMin > 24 * 60) endMin = 24 * 60;
+  if (endMin <= startMin) return null;
+  return _Slot(e, startMin, endMin);
+}
+
+String _hhmm(int minutes) =>
+    '${(minutes ~/ 60).toString().padLeft(2, '0')}:${(minutes % 60).toString().padLeft(2, '0')}';
+
 class TimetablePage extends StatefulWidget {
   const TimetablePage({super.key});
 
@@ -47,6 +86,11 @@ class TimetablePage extends StatefulWidget {
 }
 
 class _TimetablePageState extends State<TimetablePage> {
+  /// ticks every 30 s so the now/up-next card and the current-lesson
+  /// highlight follow the clock without a manual refresh
+  Timer? _ticker;
+  DateTime _now = DateTime.now();
+
   @override
   void initState() {
     super.initState();
@@ -60,6 +104,15 @@ class _TimetablePageState extends State<TimetablePage> {
         _fetchNow();
       }
     });
+    _ticker = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) setState(() => _now = DateTime.now());
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
   }
 
   Future<void> _fetchNow() async {
@@ -102,8 +155,31 @@ class _TimetablePageState extends State<TimetablePage> {
             periodTime[e.period] = e.time!;
           }
         }
-        final now = DateTime.now();
+        final now = _now;
         final todayCol = DAY_ORDER[now.weekday == 7 ? 6 : now.weekday - 1];
+
+        // ---- time awareness: current + next lesson today ----
+        final nowMinutes = now.hour * 60 + now.minute + now.second / 60.0;
+        final todaySlots = entries
+            .where((e) => e.day == todayCol)
+            .map(_parseSlot)
+            .whereType<_Slot>()
+            .toList()
+          ..sort((a, b) => a.startMin.compareTo(b.startMin));
+        _Slot? currentLesson;
+        _Slot? upNextLesson;
+        for (final s in todaySlots) {
+          if (nowMinutes >= s.startMin && nowMinutes <= s.endMin) {
+            currentLesson ??= s;
+          }
+          if (nowMinutes < s.startMin) upNextLesson ??= s;
+        }
+        final double? currentProgress = currentLesson == null
+            ? null
+            : ((nowMinutes - currentLesson.startMin) /
+                    (currentLesson.endMin - currentLesson.startMin))
+                .clamp(0.0, 1.0)
+                .toDouble();
 
         // substitute-plan entries that affect the grid — the student's own
         // courses when the membership list was scraped, otherwise all rows
@@ -167,6 +243,17 @@ class _TimetablePageState extends State<TimetablePage> {
                       )
                     : null,
               ),
+
+              // NOW / up next — time-aware glance card
+              if (entries.isNotEmpty)
+                _buildNowCard(
+                  context,
+                  sem,
+                  slots: todaySlots,
+                  current: currentLesson,
+                  upNext: upNextLesson,
+                  nowMinutes: nowMinutes,
+                ),
 
               // portal settings + status
               PortalCard(relevantCount: relevantSubs.length),
@@ -338,6 +425,10 @@ class _TimetablePageState extends State<TimetablePage> {
                                         context,
                                         flex: true,
                                         highlight: d == todayCol,
+                                        isNow:
+                                            currentLesson != null &&
+                                            d == todayCol &&
+                                            p == currentLesson.entry.period,
                                         cancelled: _cellCancelled(
                                           relevantSubs,
                                           d,
@@ -355,6 +446,11 @@ class _TimetablePageState extends State<TimetablePage> {
                                           entries,
                                           relevantSubs,
                                           colorsByName,
+                                          progress: currentLesson != null &&
+                                                  d == todayCol &&
+                                                  p == currentLesson.entry.period
+                                              ? currentProgress
+                                              : null,
                                         ),
                                       ),
                                   ],
@@ -504,6 +600,131 @@ class _TimetablePageState extends State<TimetablePage> {
     );
   }
 
+  /* ---------------- now / up next card ---------------- */
+
+  Widget _buildNowCard(
+    BuildContext context,
+    SemColors sem, {
+    required List<_Slot> slots,
+    required _Slot? current,
+    required _Slot? upNext,
+    required double nowMinutes,
+  }) {
+    if (slots.isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+
+    final Widget header;
+    final Widget body;
+    if (current != null) {
+      final e = current.entry;
+      final left = (current.endMin - nowMinutes).round();
+      header = const SemLabel('now');
+      body = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  e.subject,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleLarge,
+                ),
+              ),
+              const SizedBox(width: 10),
+              SemChip(mono: true, text: e.time ?? _hhmm(current.startMin)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: Container(
+              height: 6,
+              color: sem.paperDeep,
+              child: FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: ((nowMinutes - current.startMin) /
+                        (current.endMin - current.startMin))
+                    .clamp(0.0, 1.0),
+                child: Container(color: sem.accent),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${left <= 0 ? 'ending now' : '$left min left'}'
+            '${(e.room?.isNotEmpty ?? false) ? ' · room ${e.room}' : ''}'
+            '${(e.teacher?.isNotEmpty ?? false) ? ' · ${e.teacher}' : ''}',
+            style: theme.textTheme.labelSmall,
+          ),
+        ],
+      );
+    } else if (upNext != null) {
+      final e = upNext.entry;
+      final mins = (upNext.startMin - nowMinutes).round();
+      header = const SemLabel('up next');
+      body = Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  e.subject,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleLarge,
+                ),
+                if (e.room?.isNotEmpty ?? false)
+                  Text('room ${e.room}',
+                      style: theme.textTheme.labelSmall),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(_hhmm(upNext.startMin),
+                  style: theme.textTheme.labelLarge),
+              const SizedBox(height: 2),
+              Text(
+                mins <= 0 ? 'starting now' : 'in $mins min',
+                style: theme.textTheme.labelSmall!
+                    .copyWith(color: sem.accent),
+              ),
+            ],
+          ),
+        ],
+      );
+    } else {
+      header = const SemLabel('today');
+      body = Text(
+        "School's out — no more lessons today.",
+        style: theme.textTheme.bodyMedium!
+            .copyWith(color: sem.inkSoft, fontStyle: FontStyle.italic),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: SemCard(
+        borderColor:
+            current != null ? sem.accent.withValues(alpha: 0.5) : null,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            header,
+            const SizedBox(height: 8),
+            body,
+          ],
+        ),
+      ),
+    );
+  }
+
   /* ---------------- cell helpers ---------------- */
 
   Widget _cellHead(
@@ -538,6 +759,7 @@ class _TimetablePageState extends State<TimetablePage> {
     bool highlight = false,
     bool cancelled = false,
     bool substituted = false,
+    bool isNow = false,
   }) {
     final sem = context.sem;
     final Widget cell = Container(
@@ -547,6 +769,8 @@ class _TimetablePageState extends State<TimetablePage> {
             ? sem.marker.withValues(alpha: 0.08)
             : substituted
             ? sem.amber.withValues(alpha: 0.07)
+            : isNow
+            ? sem.accent.withValues(alpha: 0.15)
             : highlight
             ? sem.accent.withValues(alpha: 0.06)
             : null,
@@ -594,8 +818,9 @@ class _TimetablePageState extends State<TimetablePage> {
     int period,
     List<TimetableEntry> entries,
     List<PortalSub> relevantSubs,
-    Map<String, String> colorsByName,
-  ) {
+    Map<String, String> colorsByName, {
+    double? progress,
+  }) {
     final sem = context.sem;
     final items = entries
         .where((e) => e.day == day && e.period == period)
@@ -671,6 +896,21 @@ class _TimetablePageState extends State<TimetablePage> {
               ),
             ),
           ),
+        if (progress != null) ...[
+          const SizedBox(height: 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: Container(
+              height: 4,
+              color: sem.paperDeep,
+              child: FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: progress.clamp(0.0, 1.0),
+                child: Container(color: sem.accent),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
