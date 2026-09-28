@@ -25,6 +25,19 @@ jobs:
         working-directory: mobile
         run: flutter create --platforms=ios --project-name semester --org com.semesterapp .
 
+      - name: Raise iOS deployment target to 15.0
+        # template defaults to 13.0; file_picker_darwin needs ≥14, Firebase 12.x ≥15
+        working-directory: mobile/ios
+        run: |
+          perl -pi -e 's/IPHONEOS_DEPLOYMENT_TARGET = 13\.0/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' Runner.xcodeproj/project.pbxproj
+          if grep -q "platform :ios" Podfile; then
+            perl -pi -e "s/platform :ios, '[0-9.]+'/platform :ios, '15.0'/" Podfile
+          else
+            perl -pi -e "print \"platform :ios, '15.0'\\n\" if \$. == 1" Podfile
+          fi
+          grep -c "IPHONEOS_DEPLOYMENT_TARGET = 15.0" Runner.xcodeproj/project.pbxproj
+          grep -n "platform :ios" Podfile
+
       - name: Install dependencies
         working-directory: mobile
         run: flutter pub get
