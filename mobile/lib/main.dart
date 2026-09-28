@@ -2,11 +2,16 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'pages/onboarding_page.dart';
 import 'pages/shell.dart';
 import 'services/links.dart';
 import 'services/push.dart';
 import 'stores/registry.dart';
 import 'theme/app_theme.dart';
+
+/// flag written after the first-run onboarding is finished (or skipped) —
+/// device-local, so every new install sees onboarding exactly once
+const _kOnboardingDoneKey = 'semester.onboarding.done';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,7 +25,9 @@ Future<void> main() async {
   try {
     FirebaseMessaging.onBackgroundMessage(semesterFirebaseMessagingHandler);
   } catch (_) {}
-  runApp(const SemesterApp());
+  runApp(SemesterApp(
+    showOnboarding: !(prefs.getBool(_kOnboardingDoneKey) ?? false),
+  ));
   unawaitedStartup();
 }
 
@@ -29,8 +36,24 @@ Future<void> unawaitedStartup() async {
   await SemesterLinks.init();
 }
 
-class SemesterApp extends StatelessWidget {
-  const SemesterApp({super.key});
+class SemesterApp extends StatefulWidget {
+  const SemesterApp({super.key, required this.showOnboarding});
+
+  final bool showOnboarding;
+
+  @override
+  State<SemesterApp> createState() => _SemesterAppState();
+}
+
+class _SemesterAppState extends State<SemesterApp> {
+  late bool _onboarding = widget.showOnboarding;
+
+  Future<void> _finishOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kOnboardingDoneKey, true);
+    if (!mounted) return;
+    setState(() => _onboarding = false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +69,9 @@ class SemesterApp extends StatelessWidget {
           themeMode: dark == null
               ? ThemeMode.system
               : (dark ? ThemeMode.dark : ThemeMode.light),
-          home: const AppShell(),
+          home: _onboarding
+              ? OnboardingPage(onDone: _finishOnboarding)
+              : const AppShell(),
         );
       },
     );

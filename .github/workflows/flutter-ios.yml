@@ -25,6 +25,29 @@ jobs:
         working-directory: mobile
         run: flutter create --platforms=ios --project-name semester --org com.semesterapp .
 
+      - name: Apply the Semester app icon
+        run: |
+          ICONSET=mobile/ios/Runner/Assets.xcassets/AppIcon.appiconset
+          rm -f "$ICONSET"/Icon-App*.png
+          cp mobile/ios_assets/AppIcon-1024.png "$ICONSET/AppIcon-1024.png"
+          cat > "$ICONSET/Contents.json" <<'JSON'
+          {
+            "images" : [
+              {
+                "filename" : "AppIcon-1024.png",
+                "idiom" : "universal",
+                "platform" : "ios",
+                "size" : "1024x1024"
+              }
+            ],
+            "info" : {
+              "author" : "xcode",
+              "version" : 1
+            }
+          }
+          JSON
+          ls "$ICONSET"
+
       - name: Raise iOS deployment target to 15.0
         # template defaults to 13.0; file_picker_darwin needs ≥14, Firebase 12.x ≥15
         working-directory: mobile/ios
