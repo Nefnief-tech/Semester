@@ -259,6 +259,62 @@ Future<T?> showSemSheet<T>({
   bool isDismissible = true,
 }) {
   final sem = context.sem;
+
+  // iPad (regular width): centered form dialog — a bottom sheet stretched
+  // across a tablet looks wrong; the web renders these as centered modals too
+  if (MediaQuery.sizeOf(context).width >= 768) {
+    return showDialog<T>(
+      context: context,
+      barrierDismissible: isDismissible,
+      builder: (dialogContext) {
+        final theme = Theme.of(dialogContext);
+        return Dialog(
+          backgroundColor: theme.colorScheme.surfaceContainerLow,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: sem.line),
+          ),
+          insetPadding: const EdgeInsets.symmetric(
+              horizontal: 48, vertical: 24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding:
+                      const EdgeInsets.fromLTRB(20, 14, 12, 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(title,
+                            style:
+                                theme.textTheme.headlineSmall),
+                      ),
+                      SemIconButton(
+                        icon: Icons.close,
+                        onPressed: () =>
+                            Navigator.of(dialogContext).pop(),
+                      ),
+                    ],
+                  ),
+                ),
+                Divider(height: 1, thickness: 1, color: sem.line),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: Builder(builder: builder),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   return showModalBottomSheet<T>(
     context: context,
     isScrollControlled: isScrollControlled,

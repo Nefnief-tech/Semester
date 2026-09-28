@@ -21,16 +21,28 @@ import 'timetable_page.dart';
 import 'todos_page.dart';
 
 /// Port of AppShell.tsx for phones: five main tabs (Overview · Tasks ·
-/// Homework · Timetable · More) — swipeable, with the system back gesture
-/// walking back through tab history. The More tab holds Calendar, Grades,
-/// Study Room and Settings as pushed pages, so back pops them naturally.
-/// Navigation flows through [AppNav] (navigation.dart) so push taps and
-/// deeplinks land right.
+/// Homework · Timetable · More) — swipeable, bottom bar, More-destinations
+/// pushed as full-screen pages.
+///
+/// iPad (regular width ≥ 768): the same pages render in a sidebar shell —
+/// permanent destination list instead of the bottom bar, overflow pages
+/// shown in the content pane (no navigator push) with a slim header, and
+/// content constrained to a readable max width. The phone system is
+/// untouched; the layout switches with the window (Split View ready).
+
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
   @override
   State<AppShell> createState() => _AppShellState();
+}
+
+/// one of the four overflow destinations (More-tab pages)
+class _OverflowDestination {
+  final String key;
+  final String title;
+  final Widget page;
+  const _OverflowDestination(this.key, this.title, this.page);
 }
 
 class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
@@ -42,9 +54,22 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     ('More', Icons.apps_outlined, Icons.apps),
   ];
 
+  static const _destinations = [
+    _OverflowDestination('calendar', 'Calendar', CalendarPage()),
+    _OverflowDestination('grades', 'Grades', GradesPage()),
+    _OverflowDestination('study', 'Study Room', StudyRoomPage()),
+    _OverflowDestination('settings', 'Settings', SettingsPage()),
+  ];
+
   final PageController _swipe = PageController();
   int _currentTab = kTabOverview;
   final List<int> _tabHistory = [];
+
+  /// iPad content-pane page (null = show tab content)
+  _OverflowDestination? _panePage;
+
+  bool _isRegular(BuildContext context) =>
+      MediaQuery.sizeOf(context).width >= 768;
 
   @override
   void initState() {
@@ -59,10 +84,12 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     // Navigator lookups are illegal in initState — wire after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      AppNav.I.openCalendar = () => _pushPage('Calendar', const CalendarPage());
-      AppNav.I.openGrades = () => _pushPage('Grades', const GradesPage());
-      AppNav.I.openStudy = () => _pushPage('Study Room', const StudyRoomPage());
-      AppNav.I.openSettings = () => _pushPage('Settings', const SettingsPage());
+      // adaptive at call time: phones push the page, iPads show it in-pane
+      AppNav.I.openCalendar = () =>
+          _openOverflow(_destinations[0]);
+      AppNav.I.openGrades = () => _openOverflow(_destinations[1]);
+      AppNav.I.openStudy = () => _openOverflow(_destinations[2]);
+      AppNav.I.openSettings = () => _openOverflow(_destinations[3]);
       AppNav.I.markShellReady();
     });
   }
@@ -73,6 +100,15 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     _swipe.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  void _openOverflow(_OverflowDestination destination) {
+    if (!mounted) return;
+    if (_isRegular(context)) {
+      setState(() => _panePage = destination);
+    } else {
+      _pushPage(destination.title, destination.page);
+    }
   }
 
   void _pushPage(String title, Widget page) {
@@ -142,15 +178,16 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final sem = context.sem;
     return PopScope(
       // the system back gesture (edge swipe) walks back through tab history
-      // instead of leaving the app; at the root it exits. Pushed More-pages
-      // pop on their own route before this ever fires.
+      // instead of leaving the app; on iPad an open pane page closes first.
+      // Pushed More-pages (phone) pop on their own route before this fires.
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
-        if (_tabHistory.isNotEmpty) {
+        if (_isRegular(context) && _panePage != null) {
+          setState(() => _panePage = null);
+        } else if (_tabHistory.isNotEmpty) {
           final previous = _tabHistory.removeLast();
           AppNav.I.tab.value = previous;
         } else if (_currentTab != kTabOverview) {
@@ -162,128 +199,382 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
       child: ListenableBuilder(
         listenable: Stores.I.theme,
         builder: (context, _) {
-          return Scaffold(
-            backgroundColor: sem.paper,
-            appBar: AppBar(
-              title: GestureDetector(
-                onTap: () => _goTab(kTabOverview),
-                child: RichText(
-                  text: TextSpan(
-                    style: Theme.of(context)
-                        .textTheme
-                        .headlineSmall!
-                        .copyWith(fontSize: 20),
-                    children: [
-                      const TextSpan(text: 'Semester'),
-                      TextSpan(text: '.', style: TextStyle(color: sem.accent)),
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: Center(
-                    child: Text(
-                      _currentLabel.toUpperCase(),
-                      style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                            letterSpacing: 1.4,
-                          ),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'Toggle dark mode',
-                  icon: Icon(
-                    (Stores.I.theme.dark ??
-                            MediaQuery.platformBrightnessOf(context) == Brightness.dark)
-                        ? Icons.light_mode_outlined
-                        : Icons.dark_mode_outlined,
-                    size: 19,
-                    color: sem.inkSoft,
-                  ),
-                  onPressed: () => _toggleTheme(context),
-                ),
-                const SizedBox(width: 8),
+          if (_isRegular(context)) return _buildIpad(context);
+          return _buildPhone(context);
+        },
+      ),
+    );
+  }
+
+  /* ================= phone (unchanged layout) ================= */
+
+  Widget _buildPhone(BuildContext context) {
+    final sem = context.sem;
+    return Scaffold(
+      backgroundColor: sem.paper,
+      appBar: AppBar(
+        title: GestureDetector(
+          onTap: () => _goTab(kTabOverview),
+          child: RichText(
+            text: TextSpan(
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineSmall!
+                  .copyWith(fontSize: 20),
+              children: [
+                const TextSpan(text: 'Semester'),
+                TextSpan(text: '.', style: TextStyle(color: sem.accent)),
               ],
-              bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(1),
-                child: Container(height: 1, color: sem.line),
+            ),
+          ),
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Center(
+              child: Text(
+                _currentLabel.toUpperCase(),
+                style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                      letterSpacing: 1.4,
+                    ),
               ),
             ),
-            body: PlannerGrid(
-              child: PageView(
-                controller: _swipe,
-                onPageChanged: (i) => AppNav.I.tab.value = i,
-                children: const [
-                  _KeepAlive(DashboardPage()),
-                  _KeepAlive(TodosPage()),
-                  _KeepAlive(HomeworkPage()),
-                  _KeepAlive(TimetablePage()),
-                  _KeepAlive(MorePage()),
-                ],
-              ),
+          ),
+          IconButton(
+            tooltip: 'Toggle dark mode',
+            icon: Icon(
+              (Stores.I.theme.dark ??
+                      MediaQuery.platformBrightnessOf(context) == Brightness.dark)
+                  ? Icons.light_mode_outlined
+                  : Icons.dark_mode_outlined,
+              size: 19,
+              color: sem.inkSoft,
             ),
-            bottomNavigationBar: ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(18),
-              ),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: sem.paper.withValues(alpha: 0.97),
-                  border: Border(top: BorderSide(color: sem.line)),
-                ),
-                child: SafeArea(
-                  top: false,
-                  child: Row(
-                    children: [
-                      for (var i = 0; i < _tabs.length; i++)
-                        Expanded(
-                          child: InkWell(
-                            onTap: () => _goTab(i),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    i == _currentTab ? _tabs[i].$3 : _tabs[i].$2,
-                                    size: 21,
+            onPressed: () => _toggleTheme(context),
+          ),
+          const SizedBox(width: 8),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 1, color: sem.line),
+        ),
+      ),
+      body: PlannerGrid(
+        child: PageView(
+          controller: _swipe,
+          onPageChanged: (i) => AppNav.I.tab.value = i,
+          children: const [
+            _KeepAlive(DashboardPage()),
+            _KeepAlive(TodosPage()),
+            _KeepAlive(HomeworkPage()),
+            _KeepAlive(TimetablePage()),
+            _KeepAlive(MorePage()),
+          ],
+        ),
+      ),
+      bottomNavigationBar: ClipRRect(
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(18),
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            color: sem.paper.withValues(alpha: 0.97),
+            border: Border(top: BorderSide(color: sem.line)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Row(
+              children: [
+                for (var i = 0; i < _tabs.length; i++)
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => _goTab(i),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              i == _currentTab ? _tabs[i].$3 : _tabs[i].$2,
+                              size: 21,
+                              color: i == _currentTab
+                                  ? sem.accent
+                                  : sem.inkSoft,
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              _tabs[i].$1,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall!
+                                  .copyWith(
+                                    fontSize: 9,
+                                    letterSpacing: 0.2,
+                                    fontWeight: i == _currentTab
+                                        ? FontWeight.w600
+                                        : FontWeight.w400,
                                     color: i == _currentTab
                                         ? sem.accent
                                         : sem.inkSoft,
                                   ),
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    _tabs[i].$1,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelSmall!
-                                        .copyWith(
-                                          fontSize: 9,
-                                          letterSpacing: 0.2,
-                                          fontWeight: i == _currentTab
-                                              ? FontWeight.w600
-                                              : FontWeight.w400,
-                                          color: i == _currentTab
-                                              ? sem.accent
-                                              : sem.inkSoft,
-                                        ),
-                                  ),
-                                ],
-                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /* ================= iPad (sidebar shell) ================= */
+
+  Widget _buildIpad(BuildContext context) {
+    final sem = context.sem;
+    // the More hub is redundant here — its four destinations are sidebar items
+    final effectiveTab = _currentTab == kTabMore ? kTabOverview : _currentTab;
+    final sidebarWidth = (MediaQuery.sizeOf(context).width * 0.22)
+        .clamp(240.0, 300.0);
+    final page = _panePage;
+
+    return Scaffold(
+      backgroundColor: sem.paper,
+      body: SafeArea(
+        child: Row(
+          children: [
+            // ---------- sidebar ----------
+            Container(
+              width: sidebarWidth,
+              color: sem.paperDeep,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 16, 20),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: GestureDetector(
+                        onTap: () => _goTab(kTabOverview),
+                        child: RichText(
+                          text: TextSpan(
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall!
+                                .copyWith(fontSize: 20),
+                            children: [
+                              const TextSpan(text: 'Semester'),
+                              TextSpan(
+                                  text: '.',
+                                  style: TextStyle(color: sem.accent)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  for (var i = 0; i < _tabs.length - 1; i++)
+                    _sideItem(
+                      context,
+                      sem,
+                      icon: i == effectiveTab && page == null
+                          ? _tabs[i].$3
+                          : _tabs[i].$2,
+                      label: _tabs[i].$1,
+                      selected: page == null && effectiveTab == i,
+                      onTap: () => _goTab(i),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 6),
+                    child: Container(
+                        height: 1, color: sem.line),
+                  ),
+                  for (final d in _destinations)
+                    _sideItem(
+                      context,
+                      sem,
+                      icon: _destinationIcon(d.key),
+                      label: d.title,
+                      selected: page?.key == d.key,
+                      onTap: () => _openOverflow(d),
+                    ),
+                  const Spacer(),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 16, 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Semester for iPad',
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall!
+                                .copyWith(color: sem.inkSoft),
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'Toggle dark mode',
+                          icon: Icon(
+                            (Stores.I.theme.dark ??
+                                    MediaQuery.platformBrightnessOf(context) ==
+                                        Brightness.dark)
+                                ? Icons.light_mode_outlined
+                                : Icons.dark_mode_outlined,
+                            size: 19,
+                            color: sem.inkSoft,
+                          ),
+                          onPressed: () => _toggleTheme(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // ---------- divider ----------
+            Container(width: 1, color: sem.line),
+            // ---------- content pane ----------
+            Expanded(
+              child: Column(
+                children: [
+                  if (page != null) _paneHeader(page, sem),
+                  Expanded(
+                    child: PlannerGrid(
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 900),
+                          child: AnimatedSwitcher(
+                            duration: kMotionBase,
+                            switchInCurve: kMotionCurve,
+                            child: KeyedSubtree(
+                              key: ValueKey(page?.key ?? 'tab-$effectiveTab'),
+                              child: page != null
+                                  ? page.page
+                                  : IndexedStack(
+                                      index: effectiveTab,
+                                      children: const [
+                                        DashboardPage(),
+                                        TodosPage(),
+                                        HomeworkPage(),
+                                        TimetablePage(),
+                                        MorePage(),
+                                      ],
+                                    ),
                             ),
                           ),
                         ),
-                    ],
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
-          );
-        },
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _destinationIcon(String key) {
+    switch (key) {
+      case 'calendar':
+        return Icons.calendar_month_outlined;
+      case 'grades':
+        return Icons.calculate_outlined;
+      case 'study':
+        return Icons.auto_awesome_outlined;
+      default:
+        return Icons.settings_outlined;
+    }
+  }
+
+  Widget _sideItem(
+    BuildContext context,
+    SemColors sem, {
+    required IconData icon,
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Material(
+        color: selected ? sem.ink : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Row(
+              children: [
+                Icon(icon,
+                    size: 19,
+                    color: selected ? sem.paper : sem.inkSoft),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                          color: selected ? sem.paper : sem.ink,
+                          fontWeight:
+                              selected ? FontWeight.w500 : FontWeight.w400,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _paneHeader(_OverflowDestination page, SemColors sem) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: sem.line)),
+      ),
+      child: SizedBox(
+        height: 48,
+        child: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.chevron_left),
+              onPressed: () => setState(() => _panePage = null),
+            ),
+            Expanded(
+              child: Text(
+                page.title,
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineSmall!
+                    .copyWith(fontSize: 18),
+              ),
+            ),
+            IconButton(
+              tooltip: 'Toggle dark mode',
+              icon: Icon(
+                (Stores.I.theme.dark ??
+                        MediaQuery.platformBrightnessOf(context) ==
+                            Brightness.dark)
+                    ? Icons.light_mode_outlined
+                    : Icons.dark_mode_outlined,
+                size: 19,
+                color: sem.inkSoft,
+              ),
+              onPressed: () => _toggleTheme(context),
+            ),
+            const SizedBox(width: 8),
+          ],
+        ),
       ),
     );
   }
