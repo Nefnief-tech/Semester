@@ -452,15 +452,13 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                   if (page != null) _paneHeader(page, sem),
                   Expanded(
                     child: PlannerGrid(
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 900),
-                          child: AnimatedSwitcher(
-                            duration: kMotionBase,
-                            switchInCurve: kMotionCurve,
-                            child: KeyedSubtree(
-                              key: ValueKey(page?.key ?? 'tab-$effectiveTab'),
-                              child: page != null
+                        child: AnimatedSwitcher(
+                          duration: kMotionBase,
+                          switchInCurve: kMotionCurve,
+                          child: KeyedSubtree(
+                            key: ValueKey(page?.key ?? 'tab-$effectiveTab'),
+                            child: _wrapPane(
+                              page != null
                                   ? page.page
                                   : IndexedStack(
                                       index: effectiveTab,
@@ -475,7 +473,6 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                             ),
                           ),
                         ),
-                      ),
                     ),
                   ),
                 ],
@@ -483,6 +480,18 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// data-grid pages (timetable) run full-bleed in the pane; everything
+  /// else stays within a readable max width
+  Widget _wrapPane(Widget child) {
+    if (child is TimetablePage) return child;
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 900),
+        child: child,
       ),
     );
   }

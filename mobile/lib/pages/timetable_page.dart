@@ -256,7 +256,12 @@ class _TimetablePageState extends State<TimetablePage> {
                 ),
 
               // portal settings + status
-              PortalCard(relevantCount: relevantSubs.length),
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 760),
+                  child: PortalCard(relevantCount: relevantSubs.length),
+                ),
+              ),
 
               const SizedBox(height: 20),
 
@@ -322,10 +327,18 @@ class _TimetablePageState extends State<TimetablePage> {
                       border: Border.all(color: sem.line),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: SizedBox(
-                        width: 76.0 + days.length * 92,
+                    child: LayoutBuilder(
+                      builder: (context, gridConstraints) {
+                        // stretch columns to the pane width (iPad); scroll
+                        // only when the minimum width doesn't fit (phone)
+                        final minWidth = 76.0 + days.length * 92.0;
+                        final available = gridConstraints.maxWidth - 2;
+                        final gridWidth =
+                            available > minWidth ? available : minWidth;
+                        return SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: SizedBox(
+                            width: gridWidth,
                         child: Column(
                           children: [
                             // header row
@@ -459,9 +472,11 @@ class _TimetablePageState extends State<TimetablePage> {
                           ],
                         ),
                       ),
-                    ),
+                    );
+                      },
                   ),
-                )
+                ),
+              )
               else
                 EmptyState(
                   icon: Icons.table_chart_outlined,
@@ -707,19 +722,24 @@ class _TimetablePageState extends State<TimetablePage> {
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
-      child: SemCard(
-        borderColor:
-            current != null ? sem.accent.withValues(alpha: 0.5) : null,
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            header,
-            const SizedBox(height: 8),
-            body,
-          ],
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 760),
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 20),
+          child: SemCard(
+            borderColor:
+                current != null ? sem.accent.withValues(alpha: 0.5) : null,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                header,
+                const SizedBox(height: 8),
+                body,
+              ],
+            ),
+          ),
         ),
       ),
     );
