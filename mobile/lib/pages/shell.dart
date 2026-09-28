@@ -154,7 +154,13 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     setState(() {});
   }
 
-  void _goTab(int index) => AppNav.I.tab.value = index;
+  void _goTab(int index) {
+    // tab items sit underneath an open pane page — switching tabs closes it
+    // (Expo parity: setTab clears the page; without this the tabs look dead
+    // while Settings/Calendar/… is open)
+    if (_panePage != null) setState(() => _panePage = null);
+    AppNav.I.tab.value = index;
+  }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
