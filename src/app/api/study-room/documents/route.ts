@@ -8,6 +8,12 @@ export const runtime = "nodejs";
 
 const MAX_UPLOAD = 20 * 1024 * 1024; // 20 MB
 
+/* In this dependency layout the global FormData interface ends up memberless
+ * (empty `interface FormData {}` merges from @types/react's global.d.ts), so
+ * `req.formData()`'s result is typed without `.get`. Access it through a
+ * structural view — at runtime this is the standard DOM FormData. */
+type UploadForm = { get(name: string): FormDataEntryValue | null };
+
 /** lists the signed-in user's document metadata + whether an AI provider is configured */
 export async function GET(req: Request) {
   const user = await verifyUser(req);
@@ -26,7 +32,7 @@ export async function POST(req: Request) {
     return Response.json({ error: "auth_required" }, { status: 401 });
   }
   const owner = user;
-  const form = await req.formData().catch(() => null);
+  const form = (await req.formData().catch(() => null)) as UploadForm | null;
   const file = form?.get("file");
   if (!(file instanceof File)) {
     return Response.json({ error: "missing_file" }, { status: 400 });
