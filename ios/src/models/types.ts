@@ -422,6 +422,37 @@ export interface PortalPlan {
   /** the student's course codes ("Mitglied in Kursen") */
   courses: string[];
   stand?: string;
+  /** upcoming Schulaufgaben from the termine feed (same login session) */
+  tests: PortalTest[];
+}
+
+export interface PortalTest {
+  /** the portal's own termine id — stable across fetches, anchors the calendar event */
+  sourceId: string;
+  /** as shown in the portal, e.g. "Schulaufgabe in Englisch" */
+  title: string;
+  /** yyyy-MM-dd (Europe/Berlin) */
+  date: string;
+  /** HH:mm when the portal gives a real start time, absent for all-day entries */
+  time?: string;
+}
+
+export function portalTestFromJson(j: Record<string, unknown>): PortalTest {
+  return {
+    sourceId: typeof j.sourceId === 'string' ? j.sourceId : '',
+    title: typeof j.title === 'string' ? j.title : '',
+    date: typeof j.date === 'string' ? j.date : '',
+    time: typeof j.time === 'string' ? j.time : undefined,
+  };
+}
+
+export function portalTestToJson(t: PortalTest): Record<string, unknown> {
+  return {
+    sourceId: t.sourceId,
+    title: t.title,
+    date: t.date,
+    ...(t.time != null ? { time: t.time } : {}),
+  };
 }
 
 export function portalPlanFromJson(j: Record<string, unknown>): PortalPlan {
@@ -433,11 +464,21 @@ export function portalPlanFromJson(j: Record<string, unknown>): PortalPlan {
       : [],
     courses: Array.isArray(j.courses) ? j.courses.map(String) : [],
     stand: typeof j.stand === 'string' ? j.stand : undefined,
+    tests: Array.isArray(j.tests)
+      ? j.tests
+          .filter((t): t is Record<string, unknown> => !!t && typeof t === 'object')
+          .map(portalTestFromJson)
+      : [],
   };
 }
 
 export function portalPlanToJson(p: PortalPlan): Record<string, unknown> {
-  return { days: p.days.map(portalDayToJson), courses: p.courses, ...(p.stand ? { stand: p.stand } : {}) };
+  return {
+    days: p.days.map(portalDayToJson),
+    courses: p.courses,
+    ...(p.stand ? { stand: p.stand } : {}),
+    tests: (p.tests ?? []).map(portalTestToJson),
+  };
 }
 
 /** every substitution across all days */

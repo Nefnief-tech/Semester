@@ -6,8 +6,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
-import { PortalDay, PortalSub } from '../models/types';
+import { PortalDay, PortalSub, PortalTest } from '../models/types';
 import { reconcilePortalSnapshot } from '../lib/sync';
+import { syncPortalTestEvents } from '../lib/portal_tests';
 import { ApiError, SemesterApi } from '../lib/api';
 import { usePortalStore } from '../stores/portal_store';
 import { useSubjectsStore } from '../stores/subjects_store';
@@ -387,6 +388,48 @@ export function TimetablePage(): React.JSX.Element {
         </>
       ) : null}
 
+      {/* upcoming tests — Schulaufgaben from the portal's termine feed,
+          mirrored into the calendar as exam events */}
+      {(portal.data?.tests?.length ?? 0) > 0 ? (
+        <>
+          <View style={{ height: 32 }} />
+          <Text style={t.headlineSmall}>Upcoming tests</Text>
+          <Text style={[t.labelSmall, { marginTop: 3, marginBottom: 12 }]}>
+            schulaufgaben from the Eltern-Portal — added to your calendar automatically
+          </Text>
+          {(portal.data?.tests ?? []).map((test: PortalTest) => {
+            const wd = DAY_ORDER[(new Date(`${test.date}T00:00:00`).getDay() + 6) % 7];
+            return (
+              <View
+                key={`${test.sourceId}${test.date}`}
+                style={{
+                  marginBottom: 8,
+                  paddingHorizontal: 20,
+                  paddingVertical: 12,
+                  backgroundColor: c.card,
+                  borderWidth: 1,
+                  borderColor: c.line,
+                  borderRadius: 16,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10,
+                }}
+              >
+                <SemChip
+                  mono
+                  tone="ok"
+                  text={`${wd} ${test.date.slice(8, 10)}.${test.date.slice(5, 7)}.`}
+                />
+                <Text style={[t.bodyMedium, { fontWeight: '500', flex: 1 }]} numberOfLines={2}>
+                  {test.title}
+                </Text>
+                {test.time ? <Text style={t.labelSmall}>{test.time}</Text> : null}
+              </View>
+            );
+          })}
+        </>
+      ) : null}
+
       <SemSheet
         visible={jsonSheet}
         title={entries.length === 0 ? 'Paste timetable JSON' : 'Edit timetable JSON'}
@@ -412,6 +455,8 @@ export async function doPortalFetch(): Promise<void> {
     // The fetch is authoritative — retract rows from older fetches / the web
     // so the cloud never keeps two versions of the same slot alive.
     await reconcilePortalSnapshot();
+    // upcoming Schulaufgaben mirror into the calendar as exam events
+    syncPortalTestEvents(plan.tests ?? []);
   } catch (e) {
     portal.setError(
       e instanceof ApiError ? e.message : 'Could not reach the portal.',

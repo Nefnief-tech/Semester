@@ -19,11 +19,24 @@ export interface PortalDay {
   entries: PortalSub[];
 }
 
+export interface PortalTest {
+  /** the portal's own termine id — stable across fetches, anchors the calendar event */
+  sourceId: string;
+  /** as shown in the portal, e.g. "Schulaufgabe in Englisch" */
+  title: string;
+  /** yyyy-MM-dd (Europe/Berlin) */
+  date: string;
+  /** HH:mm when the portal gives a real start time, absent for all-day entries */
+  time?: string;
+}
+
 export interface PortalPlan {
   days: PortalDay[];
   /** the student's course codes ("Mitglied in Kursen") */
   courses: string[];
   stand: string | null;
+  /** upcoming Schulaufgaben from the termine feed (same login session) */
+  tests: PortalTest[];
 }
 
 const ENTITIES: Record<string, string> = {
@@ -61,12 +74,56 @@ export class PortalAuthError extends Error {
   }
 }
 
+/** the portal URL is user-supplied and fetched server-side — only public
+ *  http(s) hosts, no localhost / private / reserved addresses */
+function assertPublicHttpUrl(raw: string): URL {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    throw new Error("The portal URL is not a valid address.");
+  }
+  if (url.protocol !== "https:" && url.protocol !== "http:") {
+    throw new Error("The portal URL must start with https://");
+  }
+  const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (!host.includes(".") && !host.includes(":")) {
+    throw new Error("The portal URL needs a full hostname (e.g. evbspar.eltern-portal.org).");
+  }
+  if (
+    host === "localhost" ||
+    host.endsWith(".localhost") ||
+    host.endsWith(".local") ||
+    host.endsWith(".internal")
+  ) {
+    throw new Error("The portal URL must point at a public host.");
+  }
+  const v4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (v4) {
+    const [a, b] = [Number(v4[1]), Number(v4[2])];
+    const blocked =
+      a === 0 || a === 10 || a === 127 ||
+      (a === 100 && b >= 64 && b <= 127) ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      (a === 198 && (b === 18 || b === 19)) ||
+      (a === 192 && b === 0) ||
+      a >= 224;
+    if (blocked) throw new Error("The portal URL must point at a public host.");
+  }
+  if (/^(::1|f[cd]|fe[89ab])/.test(host)) {
+    throw new Error("The portal URL must point at a public host.");
+  }
+  return url;
+}
+
 export async function fetchPortalPlan(
   baseUrl: string,
   username: string,
   password: string,
 ): Promise<PortalPlan> {
-  const base = baseUrl.replace(/\/+$/, "");
+  const base = assertPublicHttpUrl(baseUrl).toString().replace(/\/+$/, "");
   const jar: Record<string, string> = {};
   const cookieHeader = () => Object.entries(jar).map(([k, v]) => `${k}=${v}`).join("; ");
   const absorb = (res: Response) => {
@@ -114,10 +171,28 @@ export async function fetchPortalPlan(
   if (r3.status !== 200 || html.includes("form-signin")) {
     throw new PortalAuthError("Portal rejected the login — check URL, email and password.");
   }
-  return parseVertretungsplan(html);
+
+  // 4. the termine feed (same session) — schulaufgaben ride along on every
+  // plan fetch. A missing/malformed feed must never fail the plan itself.
+  let tests: PortalTest[] = [];
+  try {
+    const r4 = await fetch(`${base}/api/ws_get_termine.php`, {
+      headers: { cookie: cookieHeader(), "user-agent": UA },
+      signal: AbortSignal.timeout(20000),
+    });
+    absorb(r4);
+    const feed = await r4.text();
+    if (r4.status === 200 && !feed.includes("form-signin")) {
+      tests = parsePortalTests(JSON.parse(feed));
+    }
+  } catch {
+    tests = [];
+  }
+
+  return { ...parseVertretungsplan(html), tests };
 }
 
-export function parseVertretungsplan(html: string): PortalPlan {
+export function parseVertretungsplan(html: string): Omit<PortalPlan, "tests"> {
   const days: PortalDay[] = [];
 
   const blockRe =
@@ -185,4 +260,66 @@ export function parseVertretungsplan(html: string): PortalPlan {
   const stand = decode(html.match(/Stand:&nbsp;([^<</]+)</)?.[1] ?? "").trim() || null;
 
   return { days, courses, stand };
+}
+
+/* ---------------- Schulaufgaben (termine feed) ----------------
+ * The portal's own calendar is fed by /api/ws_get_termine.php — a flat JSON
+ * list of every visible termin (holidays, exams, …) with epoch-ms start/end.
+ * The "Schulaufgaben" list page is just the filtered view of this feed, so
+ * we filter here: titles like "Schulaufgabe in Englisch", or "SA in …" in
+ * the short form. Dates are resolved in Europe/Berlin — the portal serves
+ * Bavarian schools and servers may run in any timezone. */
+
+const TEST_TITLE_RE = /schulaufgabe/i;
+const TEST_TITLE_SHORT_RE = /\bSA\b/;
+
+/** yyyy-MM-dd / HH:mm for an epoch-ms timestamp, resolved in school time */
+function berlinParts(ms: number): { date: string; time: string } {
+  const d = new Date(ms);
+  const date = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Berlin",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+  const time = new Intl.DateTimeFormat("de-DE", {
+    timeZone: "Europe/Berlin",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(d);
+  return { date, time };
+}
+
+export function parsePortalTests(json: unknown): PortalTest[] {
+  const feed = json as { success?: number | string; result?: unknown } | null;
+  if (!feed || Number(feed.success) !== 1 || !Array.isArray(feed.result)) return [];
+
+  const today = berlinParts(Date.now()).date;
+  const tests: PortalTest[] = [];
+  for (const raw of feed.result) {
+    if (!raw || typeof raw !== "object") continue;
+    const row = raw as Record<string, unknown>;
+    const title = typeof row.title === "string" ? decode(row.title).replace(/\s+/g, " ").trim() : "";
+    const titleShort =
+      typeof row.title_short === "string" ? decode(row.title_short).replace(/\s+/g, " ").trim() : "";
+    if (!title && !titleShort) continue;
+    if (!TEST_TITLE_RE.test(title) && !TEST_TITLE_SHORT_RE.test(titleShort)) continue;
+
+    const startMs = Number(row.start);
+    if (!Number.isFinite(startMs) || startMs <= 0) continue;
+    const { date, time } = berlinParts(startMs);
+    if (date < today) continue; // upcoming only — past exams stay out of the calendar
+
+    const sourceId = typeof row.id === "string" || typeof row.id === "number"
+      ? String(row.id).trim()
+      : "";
+    tests.push({
+      sourceId: sourceId || `${date}|${title}`,
+      title: title || titleShort,
+      date,
+      time: time === "00:00" || time === "24:00" ? undefined : time,
+    });
+  }
+  return tests.sort((a, b) => a.date.localeCompare(b.date) || (a.time ?? "").localeCompare(b.time ?? ""));
 }

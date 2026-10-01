@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Eraser, RefreshCcw, Table2, Upload } from "lucide-react";
-import type { PortalSub } from "@/lib/server/portal";
+import type { PortalPlan, PortalSub } from "@/lib/server/portal";
 import { useTimetableStore } from "@/lib/store/timetable";
 import { usePortalStore } from "@/lib/store/portal";
 import { useSubjectsStore } from "@/lib/store/subjects";
 import { useAuthStore } from "@/lib/store/auth";
 import { useHydrated } from "@/lib/hooks";
+import { syncPortalTestEvents } from "@/lib/portalTests";
 import {
   DAY_ORDER,
   EXAMPLE_TIMETABLE,
@@ -136,7 +137,7 @@ export default function TimetablePage() {
         }),
       });
       const json = (await res.json().catch(() => null)) as
-        | PortalPlanJson
+        | PortalPlan
         | { error?: string; detail?: string }
         | null;
       if (!res.ok || !json || !("days" in json)) {
@@ -153,12 +154,14 @@ export default function TimetablePage() {
         );
         return;
       }
-      usePortalStore.getState().setData(json as PortalPlanJson);
+      usePortalStore.getState().setData(json);
       // the plan syncs as structured rows (portal_entries/portal_courses) —
       // no credentials ever leave the device. The fetch is authoritative:
       // retract stale rows from earlier fetches / the phone so the cloud
       // never keeps two versions of the same slot alive.
       void reconcilePortalSnapshot();
+      // upcoming Schulaufgaben mirror into the calendar as exam events
+      syncPortalTestEvents(json.tests ?? []);
     } catch {
       portal.setError("Could not reach the portal.");
     } finally {
@@ -528,17 +531,34 @@ export default function TimetablePage() {
           </div>
         </div>
       )}
+      {/* upcoming tests — Schulaufgaben from the portal's termine feed,
+          mirrored into the calendar as exam events */}
+      {(portal.data?.tests?.length ?? 0) > 0 && (
+        <div className="mt-8">
+          <h2 className="mb-1 font-display text-xl font-semibold tracking-tight">Upcoming tests</h2>
+          <p className="mb-3 font-mono text-[10px] tracking-wide text-ink-soft">
+            schulaufgaben from the Eltern-Portal — added to your calendar automatically
+          </p>
+          <div className="space-y-1.5">
+            {(portal.data?.tests ?? []).map((t) => {
+              const wd = DAY_ORDER[(new Date(`${t.date}T00:00:00`).getDay() + 6) % 7];
+              return (
+                <div
+                  key={t.sourceId + t.date}
+                  className="card flex flex-wrap items-center gap-3 px-4 py-2.5 text-sm"
+                >
+                  <span className="chip border-accent/40 bg-accent/10 font-mono text-accent">
+                    {wd} {t.date.slice(8, 10)}.{t.date.slice(5, 7)}.
+                  </span>
+                  <span className="font-medium">{t.title}</span>
+                  {t.time && <span className="font-mono text-xs text-ink-soft">{t.time}</span>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-interface PortalPlanJson {
-  days: PortalPlanJsonDay[];
-  courses: string[];
-  stand: string | null;
-}
-interface PortalPlanJsonDay {
-  date: string;
-  weekday: string;
-  entries: PortalSub[];
-}
