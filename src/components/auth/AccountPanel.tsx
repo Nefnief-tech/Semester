@@ -115,7 +115,7 @@ function MfaSignInStep({
       <p className="text-sm leading-relaxed text-ink-soft">
         Two-factor is enabled on this account.{" "}
         {factor === "email" && sending && "Sending the code…"}
-        {factor === "email" && challengeId && "We sent a code to your email — it expires in 15 minutes."}
+        {factor === "email" && challengeId && "We sent a code to your email. It expires in 15 minutes."}
         {factor === "totp" && "Use your authenticator app to continue."}
         {factor === "recoverycode" && "Use one of the recovery codes you saved when enabling 2FA."}
       </p>
@@ -229,7 +229,7 @@ function TwoFactorSection({ enabled, onChanged }: { enabled: boolean; onChanged:
       <div className="space-y-3">
         <p className="text-sm text-ink">Two-factor is on.</p>
         <p className="text-sm leading-relaxed text-ink-soft">
-          Save these recovery codes somewhere safe — each works once instead of an
+          Save these recovery codes somewhere safe. Each works once instead of an
           emailed code, and they are the only way back if you lose access to your inbox.
         </p>
         <div className="grid grid-cols-2 gap-1 rounded-lg border border-line bg-paper p-3 font-mono text-[12px]">
@@ -407,7 +407,7 @@ export default function AccountPanel({ onClose }: { onClose?: () => void }) {
               </button>
               {verifyState === "sent" && (
                 <p className="font-mono text-[10px] text-accent">
-                  sent — follow the link in your inbox (valid 7 days)
+                  sent. Follow the link in your inbox (valid 7 days)
                 </p>
               )}
               {verifyError && <p className="text-sm text-marker">{verifyError}</p>}
@@ -546,7 +546,7 @@ export default function AccountPanel({ onClose }: { onClose?: () => void }) {
 
           <p className="font-mono text-[10px] leading-relaxed text-ink-soft">
             <CloudOff className="mr-1 inline size-3" />
-            Authenticated by your Appwrite project — the password never touches this server.
+            Authenticated by your Appwrite project. The password never touches this server.
             Sessions are httpOnly cookies.
           </p>
         </form>

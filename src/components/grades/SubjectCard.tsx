@@ -52,7 +52,7 @@ export default function SubjectCard({
             Schnitt
           </span>
           <p className="font-display text-4xl leading-tight font-semibold tracking-tight">
-            {avg === null ? "—" : formatPoints(avg)}
+            {avg === null ? "-" : formatPoints(avg)}
             {avg !== null && (
               <span className="ml-1 font-mono text-sm text-ink-soft">Pkt.</span>
             )}
