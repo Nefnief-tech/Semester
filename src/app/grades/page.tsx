@@ -83,7 +83,7 @@ export default function GradesPage() {
             overall average
           </span>
           <p className="font-display text-5xl leading-tight font-semibold tracking-tight">
-            {overall === null ? "—" : formatPoints(overall)}
+            {overall === null ? "-" : formatPoints(overall)}
             {overall !== null && (
               <span className="ml-2 font-mono text-base text-ink-soft">Pkt.</span>
             )}

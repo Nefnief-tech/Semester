@@ -8,6 +8,7 @@ import {
   CalendarDays,
   Calculator,
   LayoutDashboard,
+  Search,
   Sparkles,
   SquareCheckBig,
   Table2,
@@ -20,6 +21,7 @@ import { initSync, signOut } from "@/lib/auth/sync";
 import { pingAppwrite } from "@/lib/auth/appwrite";
 import { useAuthStore } from "@/lib/store/auth";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import CommandPalette from "@/components/ui/CommandPalette";
 
 const NAV: Array<{ href: Route; label: string; icon: LucideIcon }> = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
@@ -33,6 +35,21 @@ const NAV: Array<{ href: Route; label: string; icon: LucideIcon }> = [
 
 function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
+}
+
+/** the Semester star mark, inline so it inherits no requests */
+export function BrandMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 512 512" aria-hidden className={className}>
+      <rect width="512" height="512" rx="96" fill="#31633f" />
+      <g stroke="#f5f2ea" strokeWidth="34" strokeLinecap="round">
+        <line x1="256" y1="128" x2="256" y2="384" />
+        <line x1="143.6" y1="192" x2="368.4" y2="320" />
+        <line x1="143.6" y1="320" x2="368.4" y2="192" />
+      </g>
+      <circle cx="256" cy="256" r="40" fill="#f5f2ea" />
+    </svg>
+  );
 }
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -52,7 +69,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     auth.status === "loading"
       ? "checking session…"
       : !auth.online
-        ? "offline — saved locally"
+        ? "offline, saved locally"
         : auth.syncing
           ? "syncing…"
           : auth.syncError
@@ -61,24 +78,29 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               ? `synced · ${formatClock(auth.lastSyncedAt)}`
               : "not synced yet";
 
-  // the marketing landing renders full-bleed — no sidebar, no top bar
-  if (pathname === "/landing") return <>{children}</>;
+  // the marketing landing + docs render full-bleed — no sidebar, no top bar
+  if (pathname === "/landing" || pathname.startsWith("/docs")) return <>{children}</>;
 
   return (
     <div className="min-h-dvh">
+      <CommandPalette />
+
       {/* desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-line bg-paper px-5 py-7 md:flex">
-        <Link href="/" className="group mb-8 block">
-          <span className="font-display text-[26px] leading-none font-semibold tracking-tight">
-            Semester
-            <span className="text-accent">.</span>
-          </span>
-          <span className="mt-1 block font-mono text-[10px] tracking-[0.22em] text-ink-soft uppercase">
-            the study desk
+        <Link href="/" className="group mb-9 flex items-center gap-3">
+          <BrandMark className="size-9 rounded-[10px] shadow-[0_2px_8px_-2px_rgb(49_99_63/0.4)] transition-transform group-hover:scale-[1.04]" />
+          <span>
+            <span className="block font-display text-[22px] leading-none font-semibold tracking-tight">
+              Semester
+              <span className="text-accent">.</span>
+            </span>
+            <span className="mt-1 block font-mono text-[9px] tracking-[0.22em] text-ink-soft uppercase">
+              the study desk
+            </span>
           </span>
         </Link>
 
-        <nav className="flex flex-col gap-1">
+        <nav className="flex flex-col gap-0.5">
           {NAV.map(({ href, label, icon: Icon }) => {
             const active = isActive(pathname, href);
             return (
@@ -86,18 +108,34 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 key={href}
                 href={href}
                 className={cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors",
+                  "relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors",
                   active
-                    ? "bg-ink font-medium text-paper"
+                    ? "bg-accent-soft font-medium text-accent"
                     : "text-ink-soft hover:bg-ink/5 hover:text-ink",
                 )}
               >
-                <Icon className="size-4" strokeWidth={active ? 2.2 : 2} />
+                {active && (
+                  <span className="absolute left-0 top-1/2 h-4 w-1 -translate-y-1/2 rounded-r-full bg-accent" />
+                )}
+                <Icon className="size-4" strokeWidth={active ? 2.2 : 1.8} />
                 {label}
               </Link>
             );
           })}
         </nav>
+
+        <button
+          onClick={() =>
+            window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))
+          }
+          className="mt-3 flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink"
+        >
+          <Search className="size-4" />
+          Quick menu
+          <kbd className="ml-auto rounded border border-line bg-paper px-1.5 py-0.5 font-mono text-[9px]">
+            ⌘K
+          </kbd>
+        </button>
 
         <div className="mt-auto space-y-3 border-t border-line pt-4">
           {auth.status === "unconfigured" ? (
@@ -105,7 +143,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <p className="font-mono text-[10px] leading-relaxed text-ink-soft">
                 Data lives in your browser
                 <br />
-                (localStorage) — nothing
+                (localStorage), nothing
                 <br />
                 leaves this device.
               </p>
@@ -156,7 +194,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* mobile top bar */}
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-line bg-paper/90 px-4 backdrop-blur md:hidden">
-        <Link href="/" className="font-display text-xl font-semibold tracking-tight">
+        <Link href="/" className="flex items-center gap-2 font-display text-xl font-semibold tracking-tight">
+          <BrandMark className="size-6 rounded-md" />
           Semester<span className="text-accent">.</span>
         </Link>
         <div className="flex items-center gap-1">

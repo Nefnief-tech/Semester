@@ -23,7 +23,7 @@ const plex = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Semester — your study desk",
+  title: "Semester · your study desk",
   description:
     "All-in-one study app: tasks with due dates, a weighted grade calculator and a calendar that keeps it all together.",
 };

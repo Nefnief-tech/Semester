@@ -139,10 +139,19 @@ export default function CalendarPage() {
               return (
                 <div
                   key={day.toISOString()}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setModal({ open: true, date: toDayKey(day) })}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setModal({ open: true, date: toDayKey(day) });
+                    }
+                  }}
                   className={cn(
-                    "min-h-20 cursor-pointer border-b border-r border-line/70 p-1.5 transition-colors hover:bg-accent/[0.04] md:min-h-28 [&:nth-child(7n)]:border-r-0",
+                    "min-h-20 cursor-pointer border-b border-r border-line/70 p-1.5 transition-colors hover:bg-accent/[0.04] focus-visible:bg-accent/[0.06] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent md:min-h-28 [&:nth-child(7n)]:border-r-0",
                     !inMonth && "bg-paper-deep/50 text-ink-soft",
+                    isToday(day) && "bg-accent/[0.05]",
                   )}
                 >
                   <div className="mb-1 flex items-center justify-between px-0.5">
@@ -186,13 +195,24 @@ export default function CalendarPage() {
             return (
               <div
                 key={day.toISOString()}
-                className="flex min-h-40 flex-col rounded-xl border border-line bg-card"
+                role="button"
+                tabIndex={0}
                 onClick={() => setModal({ open: true, date: toDayKey(day) })}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setModal({ open: true, date: toDayKey(day) });
+                  }
+                }}
+                className={cn(
+                  "flex min-h-40 cursor-pointer flex-col rounded-xl border bg-card transition-colors hover:border-ink/30 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent",
+                  isToday(day) ? "border-accent/50 bg-accent/[0.03]" : "border-line",
+                )}
               >
                 <div
                   className={cn(
-                    "flex items-center justify-between rounded-t-xl border-b border-line px-3 py-2",
-                    isToday(day) && "bg-accent-soft",
+                    "flex items-center justify-between rounded-t-xl border-b px-3 py-2",
+                    isToday(day) ? "border-accent/30 bg-accent-soft" : "border-line",
                   )}
                 >
                   <span className="font-mono text-[10px] tracking-[0.14em] text-ink-soft uppercase">

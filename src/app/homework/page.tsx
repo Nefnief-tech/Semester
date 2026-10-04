@@ -103,7 +103,7 @@ export default function HomeworkPage() {
           hint={
             status === "done"
               ? "Finished homework will collect here."
-              : "Add what your teachers assigned — with a due date and subject, it shows up on the calendar too."
+              : "Add what your teachers assigned: with a due date and subject, it shows up on the calendar too."
           }
           action={
             <button className="btn-primary" onClick={() => setModal({ open: true })}>

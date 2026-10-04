@@ -61,17 +61,24 @@ export function Chip({
 
   if (item.kind === "event") {
     const Icon = TYPE_ICONS[item.event.type];
+    const isExam = item.event.type === "exam";
     return (
       <button
-        onClick={onClick}
-        title={`${TYPE_LABELS[item.event.type]} — ${item.event.title}`}
+        onClick={(e) => {
+          // don't let the day cell's "new entry" handler swallow the click
+          e.stopPropagation();
+          onClick();
+        }}
+        title={`${TYPE_LABELS[item.event.type]}: ${item.event.title}`}
         className={cn(
-          "flex w-full cursor-pointer items-center gap-1.5 overflow-hidden rounded-md border border-line bg-card px-1.5 py-1 text-left text-[11px] leading-tight transition-colors hover:border-ink/30",
+          "flex w-full cursor-pointer items-center gap-1.5 overflow-hidden rounded-md border bg-card px-1.5 py-1 text-left text-[11px] leading-tight transition-colors hover:border-ink/30",
+          isExam && "border-accent/40 bg-accent/[0.08] font-medium hover:border-accent/60",
+          !isExam && "border-line",
           className,
         )}
       >
         <span className="h-3.5 w-[3px] shrink-0 rounded-full" style={{ backgroundColor: color }} />
-        <Icon className="size-3 shrink-0 text-ink-soft" />
+        <Icon className={cn("size-3 shrink-0", isExam ? "text-accent" : "text-ink-soft")} />
         {item.time && <span className="shrink-0 font-mono text-[10px] text-ink-soft">{item.time}</span>}
         <span className="truncate">{item.event.title}</span>
       </button>
@@ -81,7 +88,10 @@ export function Chip({
   const { todo } = item;
   return (
     <button
-      onClick={onClick}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
       title={todo.done ? "Mark as open" : "Mark as done"}
       className={cn(
         "flex w-full cursor-pointer items-center gap-1.5 overflow-hidden rounded-md border border-line bg-card px-1.5 py-1 text-left text-[11px] leading-tight transition-colors hover:border-ink/30",

@@ -112,7 +112,7 @@ function CompleteForm({ userId, secret }: { userId: string; secret: string }) {
       <>
         <MailCheck className="mx-auto size-10 text-accent" />
         <p className="mt-4 text-sm leading-relaxed text-ink-soft">
-          Your password has been updated — and this address counts as verified now.
+          Your password has been updated, and this address counts as verified now.
           Sign in with the new password.
         </p>
         <Link href="/" className="btn-primary mt-6 inline-flex">

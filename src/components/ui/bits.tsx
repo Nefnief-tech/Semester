@@ -51,7 +51,7 @@ export function DueChip({ due, done }: { due?: string; done?: boolean }) {
       )}
     >
       <Clock className="size-3" />
-      {alarming ? `Overdue — ${info.label}` : info.label}
+      {alarming ? `Overdue since ${info.label}` : info.label}
     </span>
   );
 }
@@ -87,7 +87,11 @@ export function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-line bg-card/60 px-6 py-12 text-center">
-      {icon && <div className="mb-3 text-ink-soft">{icon}</div>}
+      {icon && (
+        <div className="mb-3 grid size-11 place-items-center rounded-full border border-line bg-paper text-ink-soft">
+          {icon}
+        </div>
+      )}
       <p className="font-display text-lg font-medium">{title}</p>
       {hint && <p className="mt-1 max-w-sm text-sm text-ink-soft">{hint}</p>}
       {action && <div className="mt-4">{action}</div>}

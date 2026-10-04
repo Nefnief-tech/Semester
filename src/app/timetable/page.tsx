@@ -8,7 +8,8 @@ import { usePortalStore } from "@/lib/store/portal";
 import { useSubjectsStore } from "@/lib/store/subjects";
 import { useAuthStore } from "@/lib/store/auth";
 import { useHydrated } from "@/lib/hooks";
-import { syncPortalTestEvents } from "@/lib/portalTests";
+import { syncPortalTestTasks } from "@/lib/portalTests";
+import { timetableNow } from "@/lib/schedule";
 import {
   DAY_ORDER,
   EXAMPLE_TIMETABLE,
@@ -61,6 +62,17 @@ export default function TimetablePage() {
   const [error, setError] = useState("");
   const [warnings, setWarnings] = useState<string[]>([]);
   const [fetching, setFetching] = useState(false);
+
+  // the current-lesson highlight follows the clock (30 s is plenty)
+  const [clock, setClock] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setClock(new Date()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  const lessonNow = useMemo(
+    () => timetableNow(entries, clock),
+    [entries, clock],
+  );
 
   const signedIn = useAuthStore((s) => s.status) === "signed-in";
 
@@ -144,7 +156,7 @@ export default function TimetablePage() {
         const code = json && "error" in json ? json.error : "portal_unreachable";
         portal.setError(
           code === "portal_auth"
-            ? "Portal rejected the login — check portal URL, email and password."
+            ? "Portal rejected the login. Check portal URL, email and password."
             : code === "auth_required"
               ? "Sign in first (sidebar)."
               : code === "missing_settings"
@@ -160,8 +172,9 @@ export default function TimetablePage() {
       // retract stale rows from earlier fetches / the phone so the cloud
       // never keeps two versions of the same slot alive.
       void reconcilePortalSnapshot();
-      // upcoming Schulaufgaben mirror into the calendar as exam events
-      syncPortalTestEvents(json.tests ?? []);
+      // upcoming Schulaufgaben mirror into the Tasks list (their due date
+      // puts them on the calendar automatically)
+      syncPortalTestTasks(json.tests ?? []);
     } catch {
       portal.setError("Could not reach the portal.");
     } finally {
@@ -190,7 +203,7 @@ export default function TimetablePage() {
             <Table2 className="size-5 text-accent" />
           </h1>
           <p className="mt-1 font-mono text-xs tracking-wide text-ink-soft">
-            paste your timetable as JSON — formatted automatically
+            paste your timetable as JSON, formatted automatically
           </p>
         </div>
         {entries.length > 0 && (
@@ -214,13 +227,25 @@ export default function TimetablePage() {
         )}
       </header>
 
-      {/* substitute plan portal */}
-      <details className="card mb-8 px-5 py-4" open={entries.length === 0 || !!portal.error}>
-        <summary className="cursor-pointer font-display text-base font-semibold tracking-tight">
-          Substitute plan (Vertretungsplan)
-          {portal.lastFetched && !portal.error && (
-            <span className="ml-2 font-mono text-[10px] text-ink-soft">
-              fetched {new Date(portal.lastFetched).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
+      {/* substitute plan portal — collapsed to a status row once connected */}
+      <details
+        className="card mb-8 px-5 py-4"
+        open={!portal.username || !portal.password || !!portal.error}
+      >
+        <summary className="flex cursor-pointer flex-wrap items-baseline justify-between gap-x-4 gap-y-1 font-display text-base font-semibold tracking-tight [&::-webkit-details-marker]:hidden">
+          <span>
+            Substitute plan (Vertretungsplan)
+            {portal.lastFetched && !portal.error && (
+              <span className="ml-2 font-mono text-[10px] font-normal text-ink-soft">
+                fetched {new Date(portal.lastFetched).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            )}
+          </span>
+          {!portal.error && portal.username && portal.password && (
+            <span className="font-mono text-[10px] font-normal tracking-wide text-ink-soft uppercase">
+              connected · {relevantSubs.length} substitution{relevantSubs.length === 1 ? "" : "s"}
+              {(portal.data?.tests?.length ?? 0) > 0 &&
+                ` · ${portal.data?.tests.length} upcoming test${(portal.data?.tests.length ?? 0) === 1 ? "" : "s"}`}
             </span>
           )}
         </summary>
@@ -326,7 +351,7 @@ export default function TimetablePage() {
               <Upload className="size-4" /> Format timetable
             </button>
             <p className="font-mono text-[10px] leading-relaxed text-ink-soft">
-              each entry: day · period · subject — optional: time · teacher · room. days:
+              each entry: day · period · subject, optional: time · teacher · room. days:
               mon–sun (EN or DE).
             </p>
           </div>
@@ -389,7 +414,12 @@ export default function TimetablePage() {
               <tbody>
                 {periods.map((p) => (
                   <tr key={p} className="align-top">
-                    <td className="sticky left-0 z-10 border-b border-r border-line bg-card px-2 py-2 text-center">
+                    <td
+                      className={cn(
+                        "sticky left-0 z-10 border-b border-r border-line bg-card px-2 py-2 text-center",
+                        lessonNow.current?.entry.period === p && "font-semibold text-accent",
+                      )}
+                    >
                       <div className="font-mono text-sm font-semibold">{p}</div>
                       {periodTime.get(p) && (
                         <div className="font-mono text-[9px] leading-tight text-ink-soft">
@@ -402,12 +432,15 @@ export default function TimetablePage() {
                       const cellSubs = cellSubsFor(d, p);
                       const cancelled = cellSubs.some((s) => s.cancelled);
                       const substituted = cellSubs.some((s) => !s.cancelled);
+                      const isNow =
+                        d === todayCol && lessonNow.current?.entry.period === p;
                       return (
                         <td
                           key={d}
                           className={cn(
                             "border-b border-line px-2 py-2 align-top transition-colors",
-                            d === todayCol && "bg-accent/[0.06]",
+                            d === todayCol && !isNow && "bg-accent/[0.06]",
+                            isNow && "bg-accent/[0.1] ring-1 ring-inset ring-accent/40",
                             cancelled && items.length > 0 && "bg-marker/[0.08]",
                             substituted && !cancelled && items.length > 0 && "bg-amber/[0.07]",
                           )}
@@ -537,7 +570,7 @@ export default function TimetablePage() {
         <div className="mt-8">
           <h2 className="mb-1 font-display text-xl font-semibold tracking-tight">Upcoming tests</h2>
           <p className="mb-3 font-mono text-[10px] tracking-wide text-ink-soft">
-            schulaufgaben from the Eltern-Portal — added to your calendar automatically
+            schulaufgaben from the Eltern-Portal, added to your tasks automatically
           </p>
           <div className="space-y-1.5">
             {(portal.data?.tests ?? []).map((t) => {

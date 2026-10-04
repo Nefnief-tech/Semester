@@ -16,6 +16,7 @@
   --marker: #c14b26;
   --info: #38618c;
   --amber: #8a6a10;
+  --shadow-tint: 38, 34, 27;
   color-scheme: light;
 }
 
@@ -32,6 +33,7 @@
   --marker: #e08a63;
   --info: #8fb4dd;
   --amber: #d9b95c;
+  --shadow-tint: 0, 0, 0;
   color-scheme: dark;
 }
 
@@ -65,21 +67,24 @@ body {
   color: var(--paper);
 }
 
+/* shape system: pill buttons + pill chips · 16px cards · 10px fields.
+   Nothing else gets an arbitrary radius. */
 @layer components {
   .field {
-    @apply w-full rounded-lg border border-line bg-card px-3 py-2 text-sm text-ink shadow-[inset_0_1px_0_rgb(0_0_0/0.02)] transition placeholder:text-ink-soft/60 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30;
+    @apply w-full rounded-[10px] border border-line bg-card px-3 py-2 text-sm text-ink transition placeholder:text-ink-soft/60 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30;
+    box-shadow: inset 0 1px 0 rgb(var(--shadow-tint) / 0.03);
   }
 
   .btn-primary {
-    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-ink px-4 py-2 text-sm font-medium text-paper transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-accent px-5 py-2 text-sm font-medium text-paper transition-[background-color,transform,box-shadow] hover:bg-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40;
   }
 
   .btn-ghost {
-    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-line bg-card px-3 py-2 text-sm text-ink transition-colors hover:border-ink/30 disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-line bg-card px-4 py-2 text-sm text-ink transition-[border-color,background-color,transform] hover:border-ink/30 hover:bg-paper-deep/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40;
   }
 
   .btn-icon {
-    @apply grid size-8 cursor-pointer place-items-center rounded-lg text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink;
+    @apply grid size-8 cursor-pointer place-items-center rounded-full text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink;
   }
 
   .chip {
@@ -88,9 +93,35 @@ body {
 
   .card {
     @apply rounded-2xl border border-line bg-card;
+    box-shadow:
+      0 1px 2px rgb(var(--shadow-tint) / 0.04),
+      0 12px 32px -24px rgb(var(--shadow-tint) / 0.18);
   }
 
   .label {
     @apply mb-1 block font-mono text-[11px] tracking-[0.08em] text-ink-soft uppercase;
+  }
+
+  /* workbench section header: display headline with a mono action link,
+     both sitting on one baseline */
+  .section-link {
+    @apply font-mono text-[11px] tracking-wide text-ink-soft uppercase transition-colors hover:text-ink;
+  }
+}
+
+/* entrance: one quiet rise per section, staggered via --d.
+   Reduced motion gets the finished layout immediately. */
+@media (prefers-reduced-motion: no-preference) {
+  .rise {
+    opacity: 0;
+    transform: translateY(14px);
+    animation: rise 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation-delay: var(--d, 0s);
+  }
+  @keyframes rise {
+    to {
+      opacity: 1;
+      transform: none;
+    }
   }
 }

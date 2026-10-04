@@ -11,7 +11,7 @@ export default function AccountPage() {
         <UserRound className="size-5 text-accent" />
       </h1>
       <p className="mt-1 font-mono text-xs tracking-wide text-ink-soft">
-        sign in, two-factor & sync — credentials live with your Appwrite project
+        sign in, two-factor & sync. Credentials live with your Appwrite project.
       </p>
 
       <div className="mt-6 rounded-2xl border border-line bg-card px-5 py-5">
