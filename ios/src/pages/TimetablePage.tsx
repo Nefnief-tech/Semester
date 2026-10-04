@@ -8,7 +8,7 @@ import { ScrollView, Text, View } from 'react-native';
 
 import { PortalDay, PortalSub, PortalTest } from '../models/types';
 import { reconcilePortalSnapshot } from '../lib/sync';
-import { syncPortalTestEvents } from '../lib/portal_tests';
+import { syncPortalTestTasks } from '../lib/portal_tests';
 import { ApiError, SemesterApi } from '../lib/api';
 import { usePortalStore } from '../stores/portal_store';
 import { useSubjectsStore } from '../stores/subjects_store';
@@ -395,7 +395,7 @@ export function TimetablePage(): React.JSX.Element {
           <View style={{ height: 32 }} />
           <Text style={t.headlineSmall}>Upcoming tests</Text>
           <Text style={[t.labelSmall, { marginTop: 3, marginBottom: 12 }]}>
-            schulaufgaben from the Eltern-Portal — added to your calendar automatically
+            schulaufgaben from the Eltern-Portal — added to your tasks automatically
           </Text>
           {(portal.data?.tests ?? []).map((test: PortalTest) => {
             const wd = DAY_ORDER[(new Date(`${test.date}T00:00:00`).getDay() + 6) % 7];
@@ -455,8 +455,9 @@ export async function doPortalFetch(): Promise<void> {
     // The fetch is authoritative — retract rows from older fetches / the web
     // so the cloud never keeps two versions of the same slot alive.
     await reconcilePortalSnapshot();
-    // upcoming Schulaufgaben mirror into the calendar as exam events
-    syncPortalTestEvents(plan.tests ?? []);
+    // upcoming Schulaufgaben mirror into the Tasks list (their due date
+    // puts them on the calendar automatically)
+    syncPortalTestTasks(plan.tests ?? []);
   } catch (e) {
     portal.setError(
       e instanceof ApiError ? e.message : 'Could not reach the portal.',

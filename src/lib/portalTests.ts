@@ -1,17 +1,18 @@
 "use client";
 
 import type { PortalTest } from "@/lib/server/portal";
-import type { StudyEvent } from "@/lib/types";
+import type { Todo } from "@/lib/types";
 import { useEventsStore } from "@/lib/store/events";
+import { useTodosStore } from "@/lib/store/todos";
 import { useSubjectsStore } from "@/lib/store/subjects";
 import { hashId } from "@/lib/utils";
 
 export const PORTAL_TEST_NOTES =
   "auto-imported from the Eltern-Portal — title, date and subject are overwritten on the next portal fetch";
 
-/** deterministic event id — byte-identical on every device, so web and phone
+/** deterministic todo id — byte-identical on every device, so web and phone
  *  upsert the same cloud row instead of importing the test twice */
-export const portalTestEventId = (t: PortalTest) =>
+export const portalTestTodoId = (t: PortalTest) =>
   `portal-${hashId(`portalTest|${t.sourceId}|${t.date}`)}`;
 
 /** best-effort subject link: the part after "in"/":" matched against the
@@ -31,53 +32,70 @@ function subjectIdForTitle(title: string, subjects: Array<{ id: string; name: st
 }
 
 /**
- * Mirrors the portal's upcoming Schulaufgaben into the calendar as exam
- * events. Portal-sourced events (id prefix "portal-") follow the same
- * snapshot rule as the substitution plan: the fetch is authoritative, so
- * events that dropped out of the feed are removed again. User-written notes
- * survive; everything else mirrors the feed.
+ * Mirrors the portal's upcoming Schulaufgaben into the Tasks list. One task
+ * per test; its due date puts it on the calendar automatically (calendar
+ * shows task due dates), so a single entity serves both places. Task ids
+ * carry the "portal-" prefix and follow the same snapshot rule as the
+ * substitution plan: the fetch is authoritative, so tasks that dropped out
+ * of the feed are removed again. Ticking a task off (and its createdAt) is
+ * the user's business and survives re-fetches; everything else mirrors the
+ * feed. Also removes the calendar-event mirror this replaced.
  */
-export function syncPortalTestEvents(tests: PortalTest[]): void {
-  const store = useEventsStore.getState();
+export function syncPortalTestTasks(tests: PortalTest[]): void {
+  // migration: the earlier build mirrored tests as exam events — drop those
+  const events = useEventsStore.getState();
+  for (const e of events.events) {
+    if (e.id.startsWith("portal-")) events.removeOne(e.id);
+  }
+
+  const store = useTodosStore.getState();
   const subjects = useSubjectsStore.getState().subjects;
 
-  const wanted = new Map<string, StudyEvent>();
+  const wanted = new Map<string, Todo>();
   for (const t of tests) {
-    wanted.set(portalTestEventId(t), {
-      id: portalTestEventId(t),
+    wanted.set(portalTestTodoId(t), {
+      id: portalTestTodoId(t),
       title: t.title,
-      date: t.date,
-      time: t.time,
-      type: "exam",
-      subjectId: subjectIdForTitle(t.title, subjects),
       notes: PORTAL_TEST_NOTES,
+      due: t.time ? `${t.date}T${t.time}` : t.date,
+      priority: "high",
+      subjectId: subjectIdForTitle(t.title, subjects),
+      done: false,
+      createdAt: 0, // set once at creation; never overwritten afterwards
     });
   }
 
-  for (const e of store.events) {
-    if (e.id.startsWith("portal-") && !wanted.has(e.id)) store.removeOne(e.id);
+  for (const t of store.todos) {
+    if (t.id.startsWith("portal-") && !wanted.has(t.id)) store.removeOne(t.id);
   }
 
-  const current = useEventsStore.getState().events;
-  for (const [id, ev] of wanted) {
-    const existing = current.find((e) => e.id === id);
-    // the user's own notes win — canonical notes only for untouched events
+  const current = useTodosStore.getState().todos;
+  for (const [id, want] of wanted) {
+    const existing = current.find((t) => t.id === id);
+    if (!existing) {
+      store.upsertOne({ ...want, createdAt: Date.now() });
+      continue;
+    }
+    // the user's own notes win — canonical notes only for untouched tasks
     const notes =
-      existing && existing.notes !== undefined && existing.notes !== PORTAL_TEST_NOTES
+      existing.notes !== undefined && existing.notes !== PORTAL_TEST_NOTES
         ? existing.notes
         : PORTAL_TEST_NOTES;
-    const next: StudyEvent = { ...ev, notes };
     if (
-      existing &&
-      existing.title === next.title &&
-      existing.date === next.date &&
-      existing.time === next.time &&
-      existing.type === next.type &&
-      existing.subjectId === next.subjectId &&
-      existing.notes === next.notes
+      existing.title === want.title &&
+      existing.due === want.due &&
+      existing.priority === want.priority &&
+      existing.subjectId === want.subjectId &&
+      existing.notes === notes
     ) {
       continue; // unchanged — a no-op write would trigger a pointless row push
     }
-    store.upsertOne(next);
+    store.updateTodo(id, {
+      title: want.title,
+      due: want.due,
+      priority: want.priority,
+      subjectId: want.subjectId,
+      notes,
+    });
   }
 }
