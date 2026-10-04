@@ -4,12 +4,13 @@ import { useMemo, useState } from "react";
 import {
   Check,
   ChevronLeft,
-  ChevronRight,
+  Download,
   Layers,
   Plus,
   RotateCcw,
   Shuffle,
   Trash2,
+  X,
 } from "lucide-react";
 import type { Deck, Flashcard } from "@/lib/types";
 import { useStudyRoomStore } from "@/lib/store/studyroom";
@@ -27,6 +28,19 @@ function shuffled(n: number) {
     [order[i], order[j]] = [order[j], order[i]];
   }
   return order;
+}
+
+/** CSV with a BOM so Excel opens the umlauts correctly */
+function deckToCsv(title: string, cards: Flashcard[]) {
+  const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
+  const csv = ["front,back", ...cards.map((c) => `${esc(c.front)},${esc(c.back)}`)].join("\n");
+  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${title.replace(/[^\w\- ]+/g, "").trim() || "deck"}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export default function FlashcardsPanel({ configured }: { configured: boolean }) {
@@ -49,6 +63,8 @@ export default function FlashcardsPanel({ configured }: { configured: boolean })
   const [pos, setPos] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [known, setKnown] = useState<Set<string>>(new Set());
+  const [again, setAgain] = useState<Set<string>>(new Set());
+  const [round, setRound] = useState(1);
 
   // reset study state whenever the active deck changes
   const deckId = deck?.id ?? null;
@@ -59,9 +75,15 @@ export default function FlashcardsPanel({ configured }: { configured: boolean })
     setPos(0);
     setFlipped(false);
     setKnown(new Set());
+    setAgain(new Set());
+    setRound(1);
   }
 
-  const card = deck && order.length > 0 ? deck.cards[order[pos]] : null;
+  // all hooks above this line — `configured` flips after the page's fetch
+  const signedIn = useAuthStore((s) => s.status) === "signed-in";
+
+  const card = deck && order.length > 0 && pos < order.length ? deck.cards[order[pos]] : null;
+  const roundComplete = deck !== null && order.length > 0 && pos >= order.length;
 
   const generate = async () => {
     setGenerating(true);
@@ -83,12 +105,12 @@ export default function FlashcardsPanel({ configured }: { configured: boolean })
           code === "not_configured"
             ? "Add an API key to .env.local first (see the setup note)."
             : code === "auth_required"
-              ? "Sign in first — use “Sign in to sync” in the sidebar."
+              ? "Sign in first: use “Sign in to sync” in the sidebar."
               : code === "ai_locked"
-                ? "AI access is member-only right now — ask the admin to add you to the AI team."
+                ? "AI access is member-only right now. Ask the admin to add you to the AI team."
                 : detail
-                ? `The AI provider rejected the request: ${detail}`
-                : "The AI didn't return usable flashcards — try again or pick different documents.",
+                  ? `The AI provider rejected the request: ${detail}`
+                  : "The AI didn't return usable flashcards. Try again or pick different documents.",
         );
         return;
       }
@@ -108,12 +130,56 @@ export default function FlashcardsPanel({ configured }: { configured: boolean })
   const markKnown = () => {
     if (!card) return;
     setKnown((k) => new Set(k).add(card.id));
+    setAgain((a) => {
+      const n = new Set(a);
+      n.delete(card.id);
+      return n;
+    });
     setFlipped(false);
-    setPos((p) => Math.min(p + 1, order.length - 1));
+    setPos((p) => p + 1);
+  };
+
+  const markAgain = () => {
+    if (!card) return;
+    setAgain((a) => new Set(a).add(card.id));
+    setKnown((k) => {
+      const n = new Set(k);
+      n.delete(card.id);
+      return n;
+    });
+    setOrder((o) => [...o, o[pos]]); // the card comes around once more
+    setFlipped(false);
+    setPos((p) => p + 1);
+  };
+
+  const practiceRepeats = () => {
+    if (!deck) return;
+    const idx = deck.cards
+      .map((c, i) => (again.has(c.id) ? i : -1))
+      .filter((i) => i >= 0);
+    for (let i = idx.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [idx[i], idx[j]] = [idx[j], idx[i]];
+    }
+    setOrder(idx);
+    setKnown(new Set());
+    setAgain(new Set());
+    setPos(0);
+    setFlipped(false);
+    setRound((r) => r + 1);
+  };
+
+  const restartDeck = () => {
+    if (!deck) return;
+    setOrder(shuffled(deck.cards.length));
+    setKnown(new Set());
+    setAgain(new Set());
+    setPos(0);
+    setFlipped(false);
+    setRound(1);
   };
 
   if (!configured) return <SetupNotice kind="flashcards" />;
-  const signedIn = useAuthStore((s) => s.status) === "signed-in";
   if (!signedIn) return <AuthRequiredNotice feature="generate flashcards" />;
 
   if (decks.length === 0) {
@@ -125,12 +191,18 @@ export default function FlashcardsPanel({ configured }: { configured: boolean })
           hint={
             selectedDocIds.length > 0
               ? "Turn your selected documents into a deck of flashcards."
-              : "Upload material first and tick it as AI context — then generate your deck."
+              : "Upload material first and tick it as AI context, then generate your deck."
           }
           action={
-            <button className="btn-primary" onClick={() => void generate()} disabled={generating || selectedDocIds.length === 0}>
+            <button
+              className="btn-primary"
+              onClick={() => void generate()}
+              disabled={generating || selectedDocIds.length === 0}
+            >
               <Plus className="size-4" />
-              {generating ? "Generating…" : `Generate from ${selectedDocIds.length} ${selectedDocIds.length === 1 ? "document" : "documents"}`}
+              {generating
+                ? "Generating…"
+                : `Generate from ${selectedDocIds.length} ${selectedDocIds.length === 1 ? "document" : "documents"}`}
             </button>
           }
         />
@@ -160,6 +232,14 @@ export default function FlashcardsPanel({ configured }: { configured: boolean })
             <h2 className="font-display text-xl font-semibold tracking-tight">{deck!.title}</h2>
           )}
         </div>
+        <button
+          className="btn-icon size-9"
+          aria-label="Export deck as CSV"
+          title="Export as CSV"
+          onClick={() => deckToCsv(deck!.title, deck!.cards)}
+        >
+          <Download className="size-4" />
+        </button>
         <button className="btn-ghost" onClick={() => void generate()} disabled={generating}>
           <Plus className="size-4" /> {generating ? "Generating…" : "New deck"}
         </button>
@@ -172,7 +252,36 @@ export default function FlashcardsPanel({ configured }: { configured: boolean })
         </button>
       </div>
 
-      {card ? (
+      {/* round summary — the practice loop's payoff */}
+      {roundComplete ? (
+        <div className="card flex flex-col items-center px-6 py-8 text-center">
+          <span className="grid size-12 place-items-center rounded-full border border-accent/50 bg-accent-soft text-accent">
+            {again.size === 0 ? (
+              <Check className="size-6" strokeWidth={2.5} />
+            ) : (
+              <RotateCcw className="size-5" />
+            )}
+          </span>
+          <p className="mt-3 font-display text-2xl font-semibold tracking-tight">
+            {again.size === 0 ? "Deck learned." : `Round ${round} done.`}
+          </p>
+          <p className="mt-1 max-w-sm text-sm text-ink-soft">
+            {again.size === 0
+              ? `${known.size} of ${deck!.cards.length} cards solid. Shuffle and run it again anytime.`
+              : `${known.size} known, ${again.size} to repeat. Run the misses once more until they stick.`}
+          </p>
+          <div className="mt-5 flex gap-2">
+            {again.size > 0 && (
+              <button className="btn-primary" onClick={practiceRepeats}>
+                Practice {again.size} {again.size === 1 ? "repeat" : "repeats"}
+              </button>
+            )}
+            <button className="btn-ghost" onClick={restartDeck}>
+              <RotateCcw className="size-4" /> Restart deck
+            </button>
+          </div>
+        </div>
+      ) : card ? (
         <>
           {/* flip card */}
           <div
@@ -230,32 +339,46 @@ export default function FlashcardsPanel({ configured }: { configured: boolean })
             </button>
 
             <span className="font-mono text-xs text-ink-soft">
-              {pos + 1} / {deck!.cards.length} · {known.size} known
+              {Math.min(pos + 1, deck!.cards.length)} / {deck!.cards.length}
+              {known.size > 0 && ` · ${known.size} known`}
+              {again.size > 0 && ` · ${again.size} again`}
             </span>
 
             <div className="flex gap-1">
-              <button className="btn-icon size-9" aria-label="Shuffle" onClick={() => { setOrder(shuffled(deck!.cards.length)); setPos(0); setFlipped(false); }}>
+              <button
+                className="btn-icon size-9"
+                aria-label="Shuffle"
+                onClick={() => {
+                  setOrder(shuffled(deck!.cards.length));
+                  setPos(0);
+                  setFlipped(false);
+                }}
+              >
                 <Shuffle className="size-4" />
               </button>
-              <button className="btn-icon size-9" aria-label="Reset progress" onClick={() => setKnown(new Set())}>
+              <button
+                className="btn-icon size-9"
+                aria-label="Reset progress"
+                onClick={restartDeck}
+              >
                 <RotateCcw className="size-4" />
               </button>
             </div>
 
-            <button className="btn-ghost" onClick={markKnown}>
-              <Check className="size-4" /> Known
-            </button>
-
-            <button
-              className="btn-primary"
-              disabled={pos === order.length - 1}
-              onClick={() => {
-                setFlipped(false);
-                setPos((p) => p + 1);
-              }}
-            >
-              Next <ChevronRight className="size-4" />
-            </button>
+            {flipped ? (
+              <div className="flex gap-2">
+                <button className="btn-ghost hover:border-marker/60 hover:text-marker" onClick={markAgain}>
+                  <X className="size-4" /> Again
+                </button>
+                <button className="btn-primary" onClick={markKnown}>
+                  <Check className="size-4" /> Got it
+                </button>
+              </div>
+            ) : (
+              <button className="btn-ghost" onClick={() => setFlipped(true)}>
+                Flip
+              </button>
+            )}
           </div>
         </>
       ) : (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, SendHorizontal, Square, Trash2 } from "lucide-react";
+import { Copy, MessageCircle, RotateCcw, SendHorizontal, Square, Trash2 } from "lucide-react";
 import type { ChatMessage } from "@/lib/types";
 import { useStudyRoomStore } from "@/lib/store/studyroom";
 import { cn, summarizeProviderError } from "@/lib/utils";
@@ -22,6 +22,7 @@ export default function ChatPanel({ configured }: { configured: boolean }) {
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [providerError, setProviderError] = useState("");
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -31,15 +32,9 @@ export default function ChatPanel({ configured }: { configured: boolean }) {
     if (el) el.scrollTop = el.scrollHeight;
   }, [chat]);
 
-  const send = async () => {
-    const text = input.trim();
-    if (!text || streaming) return;
-    setProviderError("");
-    setInput("");
-    appendMessage({ role: "user", content: text });
-    appendMessage({ role: "assistant", content: "" });
+  /** streams one assistant answer into the trailing (empty) message */
+  const runStream = async (history: ChatMessage[]) => {
     setStreaming(true);
-
     const controller = new AbortController();
     abortRef.current = controller;
     try {
@@ -47,7 +42,7 @@ export default function ChatPanel({ configured }: { configured: boolean }) {
         method: "POST",
         headers: { "content-type": "application/json", ...(await getAuthHeaders()) },
         body: JSON.stringify({
-          messages: [...chat, { role: "user", content: text }].map((m) => ({ role: m.role, content: m.content })),
+          messages: history.map((m) => ({ role: m.role, content: m.content })),
           documentIds: selectedDocIds,
         }),
         signal: controller.signal,
@@ -60,14 +55,14 @@ export default function ChatPanel({ configured }: { configured: boolean }) {
         const detail = summarizeProviderError(json?.detail);
         updateLastAssistant(
           json?.error === "not_configured"
-            ? "AI is not configured — add an API key to `.env.local` and restart the server."
+            ? "AI is not configured: add an API key to `.env.local` and restart the server."
             : json?.error === "auth_required"
-              ? "Sign in first — use “Sign in to sync” in the sidebar."
+              ? "Sign in first: use “Sign in to sync” in the sidebar."
               : json?.error === "ai_locked"
-                ? "AI access is member-only right now — ask the admin to add you to the AI team."
+                ? "AI access is member-only right now. Ask the admin to add you to the AI team."
                 : detail
-                ? `The AI provider rejected the request: ${detail}`
-                : "Sorry, the AI provider returned an error. Please try again.",
+                  ? `The AI provider rejected the request: ${detail}`
+                  : "Sorry, the AI provider returned an error. Please try again.",
         );
         setProviderError(detail);
         return;
@@ -104,8 +99,30 @@ export default function ChatPanel({ configured }: { configured: boolean }) {
     }
   };
 
-  if (!configured) return <SetupNotice kind="chat" />;
+  const send = async (override?: string) => {
+    const text = (override ?? input).trim();
+    if (!text || streaming) return;
+    setProviderError("");
+    setInput("");
+    appendMessage({ role: "user", content: text });
+    appendMessage({ role: "assistant", content: "" });
+    void runStream([...chat, { role: "user", content: text }]);
+  };
+
+  /** streams a fresh answer for the last question, replacing the stale one */
+  const regenerate = async () => {
+    if (streaming || chat.length === 0) return;
+    const lastUserIdx = chat.map((m) => m.role).lastIndexOf("user");
+    if (lastUserIdx === -1) return;
+    setProviderError("");
+    appendMessage({ role: "assistant", content: "" });
+    void runStream(chat.slice(0, lastUserIdx + 1));
+  };
+
+  // all hooks before any early return — `configured` flips after the page's
+  // documents fetch, and a hook after a conditional return would crash React
   const signedIn = useAuthStore((s) => s.status) === "signed-in";
+  if (!configured) return <SetupNotice kind="chat" />;
   if (!signedIn) return <AuthRequiredNotice feature="chat about your documents" />;
 
   const contextDocs = documents.filter((d) => selectedDocIds.includes(d.id));
@@ -140,9 +157,29 @@ export default function ChatPanel({ configured }: { configured: boolean }) {
             <p className="font-display text-lg font-medium">Ask your documents</p>
             <p className="mt-1 max-w-sm text-sm text-ink-soft">
               {contextDocs.length > 0
-                ? `Questions about ${contextDocs[0].name} and ${contextDocs.length - 1 > 0 ? `${contextDocs.length - 1} more selected document${contextDocs.length - 1 === 1 ? "" : "s"}` : "anything else"} — answers cite their sources.`
-                : "No documents selected — the assistant will answer from general knowledge. Tick some documents in the Documents tab to ground it."}
+                ? `Questions about ${contextDocs[0].name} and ${contextDocs.length - 1 > 0 ? `${contextDocs.length - 1} more selected document${contextDocs.length - 1 === 1 ? "" : "s"}` : "anything else"}. Answers cite their sources.`
+                : "No documents selected, so the assistant will answer from general knowledge. Tick some documents under Material to ground it."}
             </p>
+            <div className="mt-4 flex max-w-sm flex-wrap justify-center gap-1.5">
+              {(contextDocs.length > 0
+                ? [
+                    "Summarize the key ideas",
+                    "Quiz me on this material",
+                    "Explain the hardest concept step by step",
+                    "Make a study plan for the exam",
+                  ]
+                : ["What can the study room do?", "How do flashcard decks work?"]
+              ).map((p) => (
+                <button
+                  key={p}
+                  disabled={streaming}
+                  onClick={() => void send(p)}
+                  className="chip cursor-pointer transition-colors hover:border-accent/50 hover:text-accent disabled:opacity-50"
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
           </div>
         ) : (
           chat.map((m: ChatMessage, i: number) => (
@@ -178,6 +215,18 @@ export default function ChatPanel({ configured }: { configured: boolean }) {
                     sources · {m.sources.join(", ")}
                   </p>
                 )}
+                {m.role === "assistant" && m.content && !(streaming && i === chat.length - 1) && (
+                  <button
+                    onClick={() => {
+                      void navigator.clipboard.writeText(m.content);
+                      setCopiedIdx(i);
+                      setTimeout(() => setCopiedIdx(null), 1500);
+                    }}
+                    className="mt-2 inline-flex cursor-pointer items-center gap-1 font-mono text-[10px] text-ink-soft transition-colors hover:text-ink"
+                  >
+                    <Copy className="size-3" /> {copiedIdx === i ? "copied" : "copy"}
+                  </button>
+                )}
               </div>
             </div>
           ))
@@ -188,6 +237,16 @@ export default function ChatPanel({ configured }: { configured: boolean }) {
         <p className="mt-2 font-mono text-xs text-marker">
           provider error · {providerError}
         </p>
+      )}
+
+      {/* regenerate — a fresh answer for the last question */}
+      {!streaming && chat.length > 0 && chat[chat.length - 1].role === "assistant" && (
+        <button
+          onClick={() => void regenerate()}
+          className="mt-2 inline-flex cursor-pointer items-center gap-1.5 self-start font-mono text-[11px] text-ink-soft transition-colors hover:text-ink"
+        >
+          <RotateCcw className="size-3" /> regenerate answer
+        </button>
       )}
 
       {/* composer */}

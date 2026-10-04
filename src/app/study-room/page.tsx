@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, Layers, MessageCircle, Sparkles } from "lucide-react";
+import { BookOpen, FileText, Layers, ListChecks, MessageCircle, Sparkles } from "lucide-react";
 import { useHydrated } from "@/lib/hooks";
 import { useStudyRoomStore } from "@/lib/store/studyroom";
 import { currentUserInAiTeam, getAuthHeaders } from "@/lib/auth/appwrite";
@@ -11,9 +11,11 @@ import { cn } from "@/lib/utils";
 import PageSkeleton from "@/components/ui/PageSkeleton";
 import DocumentsPanel from "@/components/study-room/DocumentsPanel";
 import FlashcardsPanel from "@/components/study-room/FlashcardsPanel";
+import QuizPanel from "@/components/study-room/QuizPanel";
 import ChatPanel from "@/components/study-room/ChatPanel";
 
-type Tab = "documents" | "flashcards" | "chat";
+type Tab = "documents" | "flashcards" | "quiz" | "chat";
+type MainTab = "chat" | "quiz" | "flashcards";
 
 export default function StudyRoomPage() {
   const hydrated = useHydrated();
@@ -25,6 +27,7 @@ export default function StudyRoomPage() {
   const decks = useStudyRoomStore((s) => s.decks);
 
   const [tab, setTab] = useState<Tab>("documents");
+  const [mainTab, setMainTab] = useState<MainTab>("chat");
   const authStatus = useAuthStore((s) => s.status);
   const [aiLockedOpen, setAiLockedOpen] = useState(false);
 
@@ -59,11 +62,48 @@ export default function StudyRoomPage() {
 
   if (!hydrated) return <PageSkeleton />;
 
-  const TABS: Array<{ id: Tab; label: string; icon: typeof FileText; badge?: number }> = [
+  const MOBILE_TABS: Array<{ id: Tab; label: string; icon: typeof FileText; badge?: number }> = [
     { id: "documents", label: "Documents", icon: FileText, badge: documents.length },
     { id: "flashcards", label: "Flashcards", icon: Layers, badge: decks.length },
+    { id: "quiz", label: "Quiz", icon: ListChecks },
     { id: "chat", label: "Chat", icon: MessageCircle },
   ];
+
+  const segmented = (
+    <div className="inline-flex gap-1 rounded-full border border-line bg-card p-1">
+      {(
+        [
+          { id: "chat" as MainTab, label: "Chat", icon: MessageCircle },
+          { id: "quiz" as MainTab, label: "Quiz", icon: ListChecks },
+          { id: "flashcards" as MainTab, label: "Flashcards", icon: Layers, badge: decks.length },
+        ]
+      ).map(({ id, label, icon: Icon, badge }) => (
+        <button
+          key={id}
+          onClick={() => setMainTab(id)}
+          className={cn(
+            "flex cursor-pointer items-center gap-2 rounded-full px-4 py-1.5 text-sm transition-colors",
+            mainTab === id
+              ? "bg-accent font-medium text-paper"
+              : "text-ink-soft hover:bg-ink/5 hover:text-ink",
+          )}
+        >
+          <Icon className="size-4" />
+          {label}
+          {badge !== undefined && badge > 0 && (
+            <span
+              className={cn(
+                "rounded-full px-1.5 py-px font-mono text-[10px]",
+                mainTab === id ? "bg-paper/20 text-paper" : "bg-ink/10 text-ink-soft",
+              )}
+            >
+              {badge}
+            </span>
+          )}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <div>
@@ -74,49 +114,95 @@ export default function StudyRoomPage() {
             <Sparkles className="size-5 text-accent" />
           </h1>
           <p className="mt-1 font-mono text-xs tracking-wide text-ink-soft">
-            upload material → generate flashcards → ask questions
+            upload material, tick the context, then chat, quiz or drill flashcards
           </p>
         </div>
         <span
           className={cn(
             "chip px-3 py-1 font-mono text-[11px] tracking-[0.1em] uppercase",
-            configured ? "border-accent/40 bg-accent/10 text-accent" : "border-amber/40 bg-amber/10 text-amber",
+            configured
+              ? "border-accent/40 bg-accent/10 text-accent"
+              : "border-amber/40 bg-amber/10 text-amber",
           )}
         >
           {configured ? "AI ready" : "AI key missing"}
         </span>
       </header>
 
-      {/* tabs */}
-      <div className="mb-6 flex gap-1 rounded-xl border border-line bg-card p-1">
-        {TABS.map(({ id, label, icon: Icon, badge }) => (
-          <button
-            key={id}
-            onClick={() => setTab(id)}
-            className={cn(
-              "flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
-              tab === id ? "bg-ink font-medium text-paper" : "text-ink-soft hover:bg-ink/5 hover:text-ink",
-            )}
-          >
-            <Icon className="size-4" />
-            <span className="max-sm:hidden">{label}</span>
-            {badge !== undefined && badge > 0 && (
-              <span
-                className={cn(
-                  "rounded-full px-1.5 py-px font-mono text-[10px]",
-                  tab === id ? "bg-paper/20 text-paper" : "bg-ink/10 text-ink-soft",
-                )}
-              >
-                {badge}
+      {/* desktop: documents as a persistent rail, chat / flashcards as the work area */}
+      <div className="hidden items-start gap-6 lg:grid lg:grid-cols-[380px_1fr]">
+        <section>
+          <div className="mb-4 flex min-h-9 items-center justify-between gap-3">
+            <h2 className="flex items-center gap-2 font-display text-base font-semibold tracking-tight">
+              <FileText className="size-4 text-accent" /> Material
+            </h2>
+            {documents.length > 0 && (
+              <span className="font-mono text-[10px] tracking-wide text-ink-soft uppercase">
+                {selectedDocIds.length}/{documents.length} context
               </span>
             )}
-          </button>
-        ))}
+          </div>
+          <div className="card sticky top-24 p-4">
+            <DocumentsPanel variant="rail" />
+          </div>
+        </section>
+
+        <section className="min-w-0">
+          <div className="mb-4 flex min-h-9 items-center justify-between gap-4">
+            <h2 className="font-display text-base font-semibold tracking-tight">
+              {mainTab === "chat"
+                ? "Ask your documents"
+                : mainTab === "quiz"
+                  ? "Test yourself"
+                  : "Practice"}
+            </h2>
+            {segmented}
+          </div>
+          {mainTab === "chat" ? (
+            <ChatPanel configured={configured} />
+          ) : mainTab === "quiz" ? (
+            <QuizPanel configured={configured} />
+          ) : (
+            <FlashcardsPanel configured={configured} />
+          )}
+        </section>
       </div>
 
-      {tab === "documents" && <DocumentsPanel />}
-      {tab === "flashcards" && <FlashcardsPanel configured={configured} />}
-      {tab === "chat" && <ChatPanel configured={configured} />}
+      {/* mobile / narrow: classic tabs through all three panels */}
+      <div className="lg:hidden">
+        <div className="mb-6 flex gap-1 rounded-xl border border-line bg-card p-1">
+          {MOBILE_TABS.map(({ id, label, icon: Icon, badge }) => (
+            <button
+              key={id}
+              onClick={() => setTab(id)}
+              className={cn(
+                "flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                tab === id
+                  ? "bg-accent font-medium text-paper"
+                  : "text-ink-soft hover:bg-ink/5 hover:text-ink",
+              )}
+            >
+              <Icon className="size-4" />
+              <span className="max-sm:hidden">{label}</span>
+              {badge !== undefined && badge > 0 && (
+                <span
+                  className={cn(
+                    "rounded-full px-1.5 py-px font-mono text-[10px]",
+                    tab === id ? "bg-paper/20 text-paper" : "bg-ink/10 text-ink-soft",
+                  )}
+                >
+                  {badge}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {tab === "documents" && <DocumentsPanel />}
+        {tab === "flashcards" && <FlashcardsPanel configured={configured} />}
+        {tab === "quiz" && <QuizPanel configured={configured} />}
+        {tab === "chat" && <ChatPanel configured={configured} />}
+      </div>
 
       <Modal open={aiLockedOpen} onClose={() => setAiLockedOpen(false)} title="AI access">
         <div className="space-y-3">
@@ -130,8 +216,8 @@ export default function StudyRoomPage() {
               </h3>
               <p className="mt-1 text-sm leading-relaxed text-ink-soft">
                 Chat and flashcard generation are limited to members of the AI team while
-                things are in closed testing. Your documents still upload and stay synced —
-                ask the admin to add your account and the features unlock instantly.
+                things are in closed testing. Your documents still upload and stay synced.
+                Ask the admin to add your account and the features unlock instantly.
               </p>
             </div>
           </div>

@@ -18,7 +18,7 @@ export default function SetupNotice({ kind }: { kind: "flashcards" | "chat" }) {
         {kind === "flashcards"
           ? "Add an API key to unlock flashcard generation."
           : "Add an API key to unlock chat about your documents."}{" "}
-        Any OpenAI-compatible provider works — Z.ai, DeepSeek, OpenAI, OpenRouter or a local Ollama. Create a{" "}
+        Any OpenAI-compatible provider works: Z.ai, DeepSeek, OpenAI, OpenRouter or a local Ollama. Create a{" "}
         <code className="rounded bg-paper px-1.5 py-0.5 font-mono text-xs">.env.local</code> file in
         the project root:
       </p>
