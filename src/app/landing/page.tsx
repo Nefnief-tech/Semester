@@ -13,7 +13,7 @@ import {
   Undo2,
 } from "lucide-react";
 import ThemeToggle from "@/components/ui/ThemeToggle";
-import { useT } from "@/lib/i18n";
+import { useLangStore, useT } from "@/lib/i18n";
 import LangToggle from "@/components/ui/LangToggle";
 
 /**
@@ -21,7 +21,9 @@ import LangToggle from "@/components/ui/LangToggle";
  * An editorial, kinetic page that tells one school day through the product,
  * in the app's own paper / forest-green / Fraunces world. Real screenshots
  * and real mini-UI previews instead of mock-ups; one subject marquee; an
- * animated substitution story; a day timeline. Scoped under `.lp` so nothing
+ * animated substitution story; a day timeline. Depth comes from two layers:
+ * 3D entrances via IntersectionObserver (every browser) plus scroll-scrubbed
+ * view()-timeline transforms where supported. Scoped under `.lp` so nothing
  * leaks into the app shell. Locked light; reduced-motion gets the finished
  * layout with every animation settled.
  */
@@ -76,7 +78,7 @@ html:has(.lp) { scroll-behavior: smooth; }
 
 /* buttons — pill, the app's shape system */
 .lp .btn {
-  display: inline-flex; align-items: center; gap: 8px;
+  display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
   border-radius: 999px; padding: 13px 26px;
   font-size: 15px; font-weight: 500; text-decoration: none; border: 1px solid transparent;
   transition: background-color .2s ease, border-color .2s ease, transform .12s ease, color .2s ease;
@@ -96,13 +98,19 @@ html:has(.lp) { scroll-behavior: smooth; }
   border-bottom: 1px solid var(--lp-line-soft);
 }
 .lp .nav-inner { display: flex; align-items: center; gap: 28px; height: 66px; }
-.lp .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-family: var(--font-fraunces), Georgia, serif; font-weight: 600; font-size: 20px; letter-spacing: -0.02em; }
-.lp .brand img { width: 26px; height: 26px; border-radius: 7px; box-shadow: 0 2px 6px -2px rgba(49,99,63,.5); }
+.lp .brand { display: flex; align-items: center; gap: 10px; flex: none; text-decoration: none; font-family: var(--font-fraunces), Georgia, serif; font-weight: 600; font-size: 20px; letter-spacing: -0.02em; }
+.lp .brand img { width: 26px; height: 26px; flex: none; border-radius: 7px; box-shadow: 0 2px 6px -2px rgba(49,99,63,.5); }
 .lp .nav-links { display: flex; align-items: center; gap: 24px; margin-left: auto; }
 .lp .nav-links a:not(.nav-cta) { text-decoration: none; font-size: 14px; color: var(--lp-soft); transition: color .15s ease; }
 .lp .nav-links a:not(.nav-cta):hover { color: var(--lp-ink); }
 .lp .nav-cta { margin-left: 6px; padding: 9px 20px; font-size: 14px; }
-@media (max-width: 720px) { .lp .nav-links a:not(.nav-cta) { display: none; } }
+@media (max-width: 720px) {
+  .lp .nav-links a:not(.nav-cta) { display: none; }
+  .lp .nav-inner { gap: 8px; padding: 0 16px; }
+  .lp .nav-links { gap: 10px; }
+  .lp .brand { font-size: 18px; gap: 8px; }
+  .lp .nav-cta { padding: 8px 12px; font-size: 13px; }
+}
 
 /* ============ hero: manifesto left, live desk right ============ */
 .lp .hero { position: relative; z-index: 1; min-height: 100dvh; display: flex; align-items: center; padding: 130px 0 90px; }
@@ -143,9 +151,9 @@ html:has(.lp) { scroll-behavior: smooth; }
 .lp .float-pane b { font-family: var(--font-fraunces), Georgia, serif; font-weight: 560; font-size: 15px; }
 .lp .fp-avg { right: -26px; top: -32px; transform: translateZ(84px); }
 .lp .fp-avg b { color: var(--lp-accent); }
-.lp .fp-next { left: -30px; bottom: -28px; transform: translateZ(60px); }
+.lp .fp-next { left: -48px; bottom: -44px; transform: translateZ(60px); }
 .lp .fp-next b { color: var(--lp-amber); }
-@media (max-width: 560px) { .lp .fp-avg { right: -6px; top: -26px; } .lp .fp-next { left: -6px; bottom: -22px; } }
+@media (max-width: 560px) { .lp .fp-avg { right: -6px; top: -26px; } .lp .fp-next { left: -10px; bottom: -34px; } }
 @media (prefers-reduced-motion: no-preference) {
   .lp .float-pane { animation: lp-bob 6s ease-in-out infinite; }
   .lp .fp-next { animation-delay: -3s; }
@@ -206,8 +214,21 @@ html:has(.lp) { scroll-behavior: smooth; }
 .lp .section-head h2 { font-size: clamp(30px, 3.6vw, 48px); line-height: 1.04; margin-bottom: 14px; }
 .lp .section-head p { color: var(--lp-soft); font-size: 16.5px; }
 @media (prefers-reduced-motion: no-preference) {
-  .lp .reveal { opacity: 0; transform: translateY(22px); transition: opacity .8s cubic-bezier(.16,1,.3,1), transform .8s cubic-bezier(.16,1,.3,1); transition-delay: var(--d, 0s); }
-  .lp .reveal.in { opacity: 1; transform: none; }
+  /* 3D entrance: cards hinge up from the desk instead of floating in flat.
+     Timeline rows swing in from alternating sides, matching reading order. */
+  .lp .reveal {
+    opacity: 0;
+    transform: perspective(1100px) translate3d(0, 34px, -46px) rotateX(var(--r3x, 7deg)) rotateY(var(--r3y, 0deg));
+    transform-origin: var(--r3o, 50% 100%);
+    transition: opacity .9s cubic-bezier(.16,1,.3,1), transform .9s cubic-bezier(.16,1,.3,1);
+    transition-delay: var(--d, 0s);
+  }
+  .lp .reveal.in {
+    opacity: 1;
+    transform: perspective(1100px) translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg);
+  }
+  .lp .t-row.reveal { --r3y: 6deg; --r3o: 0% 100%; }
+  .lp .t-row:nth-child(even).reveal { --r3y: -6deg; --r3o: 100% 100%; }
 }
 
 /* ============ 7:45 story: copy left, swapping timetable right ============ */
@@ -353,26 +374,110 @@ html:has(.lp) { scroll-behavior: smooth; }
 .lp .foot-right { margin-left: auto; display: flex; gap: 20px; }
 .lp .foot-inner a { text-decoration: none; }
 .lp .foot-inner a:hover { color: var(--lp-ink); }
+
+/* ============ depth: scroll-linked 3D ============
+   On top of the one-shot .reveal entrances (which work everywhere), browsers
+   with CSS scroll-driven animations get continuous, scroll-scrubbed depth:
+   screenshots and the CTA slab settle flat as they travel into view, the hero
+   desk dollies back while the hero scrolls away, and the marquee drifts
+   against the scroll. Pure transform on the compositor, no scroll listeners.
+   The IntersectionObserver reveal stays as the fallback; reduced motion
+   settles everything into the finished layout. */
+.lp .hero-glow {
+  position: absolute; left: calc(50% - 390px); top: calc(56% - 390px);
+  width: 780px; height: 780px; border-radius: 50%;
+  background: radial-gradient(50% 50% at 50% 50%, rgba(49,99,63,.14), transparent 70%);
+  filter: blur(28px); pointer-events: none;
+}
+.dark .lp .hero-glow {
+  background: radial-gradient(50% 50% at 50% 50%, rgba(143,185,154,.12), transparent 70%);
+}
+@media (max-width: 980px) { .lp .hero-glow { display: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .lp .shot-frame, .lp .cta-box, .lp .tt-scroll, .lp .desk3d, .lp .marquee-par, .lp .hero-glow {
+      will-change: transform, translate;
+    }
+    .lp .shot-frame {
+      animation: lp-settle linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 72%;
+    }
+    .lp .cta-box {
+      animation: lp-settle linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 60%;
+    }
+    .lp .tt-scroll {
+      animation: lp-settle-soft linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 80%;
+    }
+    .lp .desk3d {
+      animation: lp-dolly linear both;
+      animation-timeline: view();
+      animation-range: exit 0% exit 100%;
+    }
+    .lp .hero-glow {
+      animation: lp-glow-drift linear both;
+      animation-timeline: view();
+      animation-range: exit 0% exit 100%;
+    }
+    .lp .marquee-par {
+      animation: lp-against linear both;
+      animation-timeline: view();
+      animation-range: entry 0% exit 100%;
+    }
+    @keyframes lp-settle {
+      from { transform: perspective(1300px) rotateX(13deg) scale(.95); }
+      to { transform: perspective(1300px) rotateX(0deg) scale(1); }
+    }
+    @keyframes lp-settle-soft {
+      from { transform: perspective(1300px) rotateX(9deg) scale(.97); }
+      to { transform: perspective(1300px) rotateX(0deg) scale(1); }
+    }
+    /* individual translate/scale properties compose with the desk's mouse-tilt transform */
+    @keyframes lp-dolly {
+      from { translate: 0 0; scale: 1; }
+      to { translate: 0 9vh; scale: .96; }
+    }
+    @keyframes lp-glow-drift {
+      from { translate: 0 0; opacity: .9; }
+      to { translate: 0 18vh; opacity: 0; }
+    }
+    @keyframes lp-against {
+      from { translate: 4vw 0; }
+      to { translate: -4vw 0; }
+    }
+  }
+}
 `;
 
 export default function LandingPage() {
   const t = useT();
+  const lang = useLangStore((s) => s.lang);
   // the desk card shows today's real date — written straight into the DOM
-  // after mount (an external system), so there is no SSR mismatch
+  // after mount (an external system), so there is no SSR mismatch; re-written
+  // when the language flips so the weekday stays in the right language
   const dateRef = useRef<HTMLSpanElement>(null);
   const heroRef = useRef<HTMLElement>(null);
   const desk3dRef = useRef<HTMLDivElement>(null);
 
-  /* date stamp + scroll reveals + the 7:45 swap, one mount effect */
   useEffect(() => {
     if (dateRef.current) {
-      dateRef.current.textContent = new Date().toLocaleDateString("en-GB", {
-        weekday: "short",
-        day: "2-digit",
-        month: "2-digit",
-      });
+      dateRef.current.textContent = new Date().toLocaleDateString(
+        lang === "de" ? "de-DE" : "en-GB",
+        {
+          weekday: "short",
+          day: "2-digit",
+          month: "2-digit",
+        },
+      );
     }
+  }, [lang]);
 
+  /* scroll reveals + the 7:45 swap, one mount effect */
+  useEffect(() => {
     const els = document.querySelectorAll(".lp .reveal, .lp .tt");
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
       els.forEach((el) => el.classList.add("in", "swap-in"));
@@ -481,6 +586,7 @@ export default function LandingPage() {
 
       {/* ============ hero: manifesto + live desk ============ */}
       <header className="hero" ref={heroRef}>
+        <div className="hero-glow" aria-hidden="true" />
         <div className="wrap hero-grid">
           <div>
             <h1 className="display">
@@ -512,7 +618,7 @@ export default function LandingPage() {
               <div
                 className="desk"
                 role="img"
-                aria-label="Preview of Semester's Today view: the current lesson with a progress bar and two open tasks"
+                aria-label={t("Preview of Semester's Today view: the current lesson with a progress bar and two open tasks")}
               >
                 <div className="head">
                   <span className="hello">{t("Today")}</span>
@@ -561,17 +667,19 @@ export default function LandingPage() {
 
       {/* ============ the one marquee: subjects, shared by everything ============ */}
       <div className="marquee-sec" aria-hidden="true">
-        <div className="marquee">
-          {[0, 1].map((copy) => (
-            <span key={copy}>
-              {subjects.map((s) => (
-                <b key={s}>
-                  {s}
-                  {star("star")}
-                </b>
-              ))}
-            </span>
-          ))}
+        <div className="marquee-par">
+          <div className="marquee">
+            {[0, 1].map((copy) => (
+              <span key={copy}>
+                {subjects.map((s) => (
+                  <b key={s}>
+                    {s}
+                    {star("star")}
+                  </b>
+                ))}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -589,47 +697,49 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div
-              className="tt"
-              role="img"
-              aria-label="Timetable fragment where the Englisch lesson in period 3 is cancelled and Sport moves in with substitute Fr. Lauf"
-            >
-              <div className="clockline">
-                <span className="t">This week</span>
-                <span className="d">Mon · Wed · Fri</span>
-              </div>
-              <div className="tt-grid">
-                <div className="row head">
-                  <div>Pd</div>
-                  <div>Mon</div>
-                  <div>Wed</div>
-                  <div>Fri</div>
+            <div className="tt-scroll">
+              <div
+                className="tt"
+                role="img"
+                aria-label={t("Timetable fragment where Sport on Wednesday is cancelled and Fr. Lauf substitutes Sport on Friday")}
+              >
+                <div className="clockline">
+                  <span className="t">{t("This week")}</span>
+                  <span className="d">{t("Mon")} · {t("Wed")} · {t("Fri")}</span>
                 </div>
-                <div className="row">
-                  <div className="pd">1</div>
-                  <div className="less"><b>Mathe</b><span>B1</span></div>
-                  <div className="less"><b>Sport</b><span>Gym</span></div>
-                  <div className="less"><b>Englisch</b><span>112</span></div>
-                </div>
-                <div className="row">
-                  <div className="pd">3</div>
-                  <div className="less"><b>Physik</b><span>Lab</span></div>
-                  <div className="less swap cell-sub">
-                    <b>Sport</b>
-                    <span>Gym</span>
-                    <span className="chip red">cancelled</span>
+                <div className="tt-grid">
+                  <div className="row head">
+                    <div>{t("Pd")}</div>
+                    <div>{t("Mon")}</div>
+                    <div>{t("Wed")}</div>
+                    <div>{t("Fri")}</div>
                   </div>
-                  <div className="less">
-                    <b>Musik</b>
-                    <span>112</span>
-                    <div className="sub-line">→ Sport · Fr. Lauf · Gym</div>
+                  <div className="row">
+                    <div className="pd">1</div>
+                    <div className="less"><b>Mathe</b><span>B1</span></div>
+                    <div className="less"><b>Sport</b><span>Gym</span></div>
+                    <div className="less"><b>Englisch</b><span>112</span></div>
                   </div>
-                </div>
-                <div className="row">
-                  <div className="pd">5</div>
-                  <div className="less"><b>Deutsch</b><span>B2</span></div>
-                  <div className="less"><b>Mathe</b><span>B1</span></div>
-                  <div className="less"><b>Bio</b><span>Lab 2</span></div>
+                  <div className="row">
+                    <div className="pd">3</div>
+                    <div className="less"><b>Physik</b><span>Lab</span></div>
+                    <div className="less swap cell-sub">
+                      <b>Sport</b>
+                      <span>Gym</span>
+                      <span className="chip red">{t("cancelled")}</span>
+                    </div>
+                    <div className="less">
+                      <b>Musik</b>
+                      <span>112</span>
+                      <div className="sub-line">→ Sport · Fr. Lauf · Gym</div>
+                    </div>
+                  </div>
+                  <div className="row">
+                    <div className="pd">5</div>
+                    <div className="less"><b>Deutsch</b><span>B2</span></div>
+                    <div className="less"><b>Mathe</b><span>B1</span></div>
+                    <div className="less"><b>Bio</b><span>Lab 2</span></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -649,10 +759,10 @@ export default function LandingPage() {
           <div className="desk-shot shot-frame reveal">
             <Image
               src="/shots/desk.png"
-              alt="The Semester overview: greeting, current lesson, task queue, week strip and subject grades"
+              alt={t("The Semester overview: greeting, current lesson, task queue, week strip and subject grades")}
               width={1720}
               height={1160}
-              priority
+              preload
               sizes="(max-width: 1200px) 100vw, 1144px"
             />
           </div>
@@ -692,7 +802,7 @@ export default function LandingPage() {
                 <p>{t("Import your weekly grid once, then watch the school portal rewrite it live. Double periods, rooms and substitutes included.")}</p>
               </div>
               <div className="shot-frame" style={{ width: "min(480px, 100%)" }}>
-                <Image src="/shots/timetable.png" alt="Semester timetable with a cancelled and a substituted lesson marked" width={1720} height={1160} sizes="480px" />
+                <Image src="/shots/timetable.png" alt={t("Semester timetable with a cancelled and a substituted lesson marked")} width={1720} height={1160} sizes="480px" />
               </div>
             </div>
 
@@ -722,7 +832,7 @@ export default function LandingPage() {
                 <p>{t("Upload PDFs, slides or notes and ask away. Answers are grounded in your material and cite the exact page.")}</p>
               </div>
               <div className="shot-frame" style={{ width: "min(480px, 100%)" }}>
-                <Image src="/shots/room.png" alt="AI study room chat answering with a citation from an uploaded document" width={1720} height={1160} sizes="480px" />
+                <Image src="/shots/room.png" alt={t("AI study room chat answering with a citation from an uploaded document")} width={1720} height={1160} sizes="480px" />
               </div>
             </div>
           </div>
