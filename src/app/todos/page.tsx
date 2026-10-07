@@ -7,6 +7,7 @@ import { useSubjectsStore } from "@/lib/store/subjects";
 import { useHydrated } from "@/lib/hooks";
 import type { Todo } from "@/lib/types";
 import { cn, dueInfo, findSubject, PRIORITY_ORDER } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 import PageSkeleton from "@/components/ui/PageSkeleton";
 import { DueChip, EmptyState, PriorityBadge, SubjectTag } from "@/components/ui/bits";
 import TodoFormModal from "@/components/todos/TodoFormModal";
@@ -60,7 +61,7 @@ function groupOpen(todos: Todo[]): TaskGroup[] {
   return meta
     .map(([key, label, tone]) => ({
       key,
-      label,
+      label: label, // translated at render via t()
       tone,
       todos: buckets[key].sort(byDue),
     }))
@@ -69,6 +70,7 @@ function groupOpen(todos: Todo[]): TaskGroup[] {
 
 export default function TodosPage() {
   const hydrated = useHydrated();
+  const t = useT();
   const todos = useTodosStore((s) => s.todos);
   const addTodo = useTodosStore((s) => s.addTodo);
   const subjects = useSubjectsStore((s) => s.subjects);
@@ -131,7 +133,7 @@ export default function TodosPage() {
       >
         <button
           onClick={() => toggleTodo(todo.id)}
-          aria-label={todo.done ? "Mark as open" : "Mark as done"}
+          aria-label={todo.done ? t("Mark as open") : t("Mark as done")}
           className={cn(
             "mt-0.5 grid size-5 shrink-0 cursor-pointer place-items-center rounded-full border transition-colors",
             todo.done
@@ -164,14 +166,14 @@ export default function TodosPage() {
         <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 max-md:opacity-100">
           <button
             className="btn-icon"
-            aria-label="Edit task"
+            aria-label={t("Edit task")}
             onClick={() => setModal({ open: true, todo })}
           >
             <Pencil className="size-3.5" />
           </button>
           <button
             className="btn-icon hover:text-marker"
-            aria-label="Delete task"
+            aria-label={t("Delete task")}
             onClick={() => removeTodo(todo.id)}
           >
             <Trash2 className="size-3.5" />
@@ -185,13 +187,13 @@ export default function TodosPage() {
     <div>
       <header className="rise mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-4xl font-semibold tracking-tight">Tasks</h1>
+          <h1 className="font-display text-4xl font-semibold tracking-tight">{t("Tasks")}</h1>
           <p className="mt-1 font-mono text-xs tracking-wide text-ink-soft">
-            {openCount} open · {todos.length - openCount} done
+            {openCount} {t("open")} · {todos.length - openCount} {t("done")}
           </p>
         </div>
         <button className="btn-primary" onClick={() => setModal({ open: true })}>
-          <Plus className="size-4" /> New task
+          <Plus className="size-4" /> {t("New task")}
         </button>
       </header>
 
@@ -207,8 +209,8 @@ export default function TodosPage() {
           value={quickTitle}
           onChange={(e) => setQuickTitle(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addQuick()}
-          placeholder="Add a task and press Enter"
-          aria-label="Quick-add a task"
+          placeholder={t("Add a task and press Enter")}
+          aria-label={t("Add a task and press Enter")}
           className="min-w-40 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-ink-soft/60"
         />
         <label className="flex cursor-pointer items-center gap-1.5 font-mono text-[11px] text-ink-soft">
@@ -217,7 +219,7 @@ export default function TodosPage() {
             type="date"
             value={quickDue}
             onChange={(e) => setQuickDue(e.target.value)}
-            aria-label="Due date for the quick-added task"
+            aria-label={t("Due date")}
             className="cursor-pointer bg-transparent font-mono text-[11px] text-ink outline-none"
           />
         </label>
@@ -274,11 +276,11 @@ export default function TodosPage() {
         groups.length === 0 ? (
           <EmptyState
             icon={<Inbox className="size-8" />}
-            title="No tasks here"
+            title={t("No tasks here")}
             hint="Add a task with a due date, priority and subject. It will also show up on the calendar."
             action={
               <button className="btn-primary" onClick={() => setModal({ open: true })}>
-                <Plus className="size-4" /> New task
+                <Plus className="size-4" /> {t("New task")}
               </button>
             }
           />
@@ -294,7 +296,7 @@ export default function TodosPage() {
                     g.tone === "plain" && "text-ink-soft",
                   )}
                 >
-                  {g.label}
+                  {t(g.label)}
                   <span className="ml-1.5 font-normal">{g.todos.length}</span>
                 </h2>
                 <ul className="card divide-y divide-line px-2">{g.todos.map(row)}</ul>
@@ -305,15 +307,15 @@ export default function TodosPage() {
       ) : flat.length === 0 ? (
         <EmptyState
           icon={<Inbox className="size-8" />}
-          title={status === "done" ? "Nothing completed yet" : "No tasks here"}
+          title={status === "done" ? t("Nothing completed yet") : t("No tasks here")}
           hint={
             status === "done"
-              ? "Finished tasks will collect here."
+              ? t("Finished tasks will collect here.")
               : "Add a task with a due date, priority and subject. It will also show up on the calendar."
           }
           action={
             <button className="btn-primary" onClick={() => setModal({ open: true })}>
-              <Plus className="size-4" /> New task
+              <Plus className="size-4" /> {t("New task")}
             </button>
           }
         />

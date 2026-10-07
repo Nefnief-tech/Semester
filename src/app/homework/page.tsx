@@ -7,6 +7,7 @@ import { useHomeworkStore } from "@/lib/store/homework";
 import { useSubjectsStore } from "@/lib/store/subjects";
 import { useHydrated } from "@/lib/hooks";
 import { cn, dueInfo, findSubject, PRIORITY_ORDER } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 import PageSkeleton from "@/components/ui/PageSkeleton";
 import { DueChip, EmptyState, PriorityBadge, SubjectTag } from "@/components/ui/bits";
 import HomeworkFormModal from "@/components/homework/HomeworkFormModal";
@@ -15,6 +16,7 @@ type StatusFilter = "open" | "done" | "all";
 
 export default function HomeworkPage() {
   const hydrated = useHydrated();
+  const t = useT();
   const homeworks = useHomeworkStore((s) => s.homeworks);
   const subjects = useSubjectsStore((s) => s.subjects);
   const toggleHomework = useHomeworkStore((s) => s.toggleHomework);
@@ -44,13 +46,13 @@ export default function HomeworkPage() {
     <div>
       <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-4xl font-semibold tracking-tight">Homework</h1>
+          <h1 className="font-display text-4xl font-semibold tracking-tight">{t("Homework")}</h1>
           <p className="mt-1 font-mono text-xs tracking-wide text-ink-soft">
-            {openCount} open · {homeworks.length - openCount} done
+            {openCount} {t("open")} · {homeworks.length - openCount} {t("done")}
           </p>
         </div>
         <button className="btn-primary" onClick={() => setModal({ open: true })}>
-          <Plus className="size-4" /> New homework
+          <Plus className="size-4" /> {t("New homework")}
         </button>
       </header>
 
@@ -99,15 +101,15 @@ export default function HomeworkPage() {
       {visible.length === 0 ? (
         <EmptyState
           icon={<BookOpen className="size-8" />}
-          title={status === "done" ? "Nothing completed yet" : "No homework here"}
+          title={status === "done" ? t("Nothing completed yet") : t("No homework here")}
           hint={
             status === "done"
-              ? "Finished homework will collect here."
-              : "Add what your teachers assigned: with a due date and subject, it shows up on the calendar too."
+              ? t("Finished homework will collect here.")
+              : t("Add what your teachers assigned: with a due date and subject, it shows up on the calendar too.")
           }
           action={
             <button className="btn-primary" onClick={() => setModal({ open: true })}>
-              <Plus className="size-4" /> New homework
+              <Plus className="size-4" /> {t("New homework")}
             </button>
           }
         />
@@ -155,14 +157,14 @@ export default function HomeworkPage() {
                 <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 max-md:opacity-100">
                   <button
                     className="btn-icon"
-                    aria-label="Edit homework"
+                    aria-label={t("Edit")}
                     onClick={() => setModal({ open: true, homework: hw })}
                   >
                     <Pencil className="size-3.5" />
                   </button>
                   <button
                     className="btn-icon hover:text-marker"
-                    aria-label="Delete homework"
+                    aria-label={t("Delete")}
                     onClick={() => removeHomework(hw.id)}
                   >
                     <Trash2 className="size-3.5" />

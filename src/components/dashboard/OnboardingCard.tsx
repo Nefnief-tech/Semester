@@ -14,6 +14,7 @@ import { syncPortalTestTasks } from "@/lib/portalTests";
 import { EXAMPLE_TIMETABLE, parseTimetable } from "@/lib/timetable";
 import type { PortalPlan } from "@/lib/server/portal";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 /**
  * Setup wizard for a brand-new desk: three steps, each done the moment its
@@ -24,6 +25,7 @@ const DISMISS_KEY = "semester.onboarding.dismissed";
 
 export default function OnboardingCard() {
   const hydrated = useHydrated();
+  const t = useT();
   const subjects = useSubjectsStore((s) => s.subjects);
   const addSubject = useSubjectsStore((s) => s.addSubject);
   const entries = useTimetableStore((s) => s.entries);
@@ -103,10 +105,10 @@ export default function OnboardingCard() {
       if (!res.ok || !json || !("days" in json)) {
         setPortalMsg(
           json && "error" in json && json.error === "portal_auth"
-            ? "The portal rejected the login. Check URL, email and password."
+            ? t("The portal rejected the login. Check URL, email and password.")
             : json && "error" in json && json.error === "auth_required"
-              ? "Sign in first (sidebar) so the plan can sync."
-              : "The portal could not be reached. You can do this later on the timetable page.",
+              ? t("Sign in first (sidebar) so the plan can sync.")
+              : t("The portal could not be reached. You can do this later on the timetable page."),
         );
         return;
       }
@@ -141,7 +143,7 @@ export default function OnboardingCard() {
           setDismissed(true);
         }}
         className="btn-icon absolute right-3 top-3"
-        aria-label="Skip setup"
+        aria-label={t("Skip setup")}
       >
         <X className="size-4" />
       </button>
@@ -151,11 +153,11 @@ export default function OnboardingCard() {
           <PartyPopper className="size-5" />
         </span>
         <div>
-          <h2 className="font-display text-xl font-semibold tracking-tight">Set up your desk</h2>
+          <h2 className="font-display text-xl font-semibold tracking-tight">{t("Set up your desk")}</h2>
           <p className="font-mono text-[11px] text-ink-soft">
             {stepsDone === 3
-              ? "all set, the desk fills itself from here"
-              : `${stepsDone} of 3 done · everything saves automatically`}
+              ? t("all set, the desk fills itself from here")
+              : `${stepsDone} ${t("of 3 done · everything saves automatically")}`}
           </p>
         </div>
       </div>
@@ -166,15 +168,15 @@ export default function OnboardingCard() {
           {stepBadge(done.timetable, 1)}
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium">
-              Your weekly timetable{" "}
-              {done.timetable && <span className="font-mono text-[10px] text-accent uppercase">done</span>}
+              {t("Your weekly timetable")}{" "}
+              {done.timetable && <span className="font-mono text-[10px] text-accent uppercase">{t("done")}</span>}
             </p>
             {!done.timetable && (
               <>
                 <p className="mt-0.5 text-xs text-ink-soft">
-                  Paste the JSON below or{" "}
+                  {t("Paste the JSON below or")}{" "}
                   <Link href="/timetable" className="underline decoration-line hover:text-ink">
-                    do it on the timetable page
+                    {t("do it on the timetable page")}
                   </Link>
                   .
                 </p>
@@ -188,13 +190,13 @@ export default function OnboardingCard() {
                 />
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <button className="btn-primary px-4 py-1.5 text-xs" onClick={formatTimetable}>
-                    <Upload className="size-3.5" /> Format timetable
+                    <Upload className="size-3.5" /> {t("Format timetable")}
                   </button>
                   <button
                     className="btn-ghost px-3 py-1.5 text-xs"
                     onClick={() => setTimetableRaw(EXAMPLE_TIMETABLE)}
                   >
-                    <Table2 className="size-3.5" /> Use example
+                    <Table2 className="size-3.5" /> {t("Use example")}
                   </button>
                 </div>
                 {timetableMsg && <p className="mt-2 text-xs text-marker">{timetableMsg}</p>}
@@ -208,15 +210,15 @@ export default function OnboardingCard() {
           {stepBadge(done.subjects, 2)}
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium">
-              Your subjects{" "}
+              {t("Your subjects")}{" "}
               {done.subjects && (
                 <span className="font-mono text-[10px] text-accent uppercase">
-                  {subjects.length} added
+                  {subjects.length} {t("added")}
                 </span>
               )}
             </p>
             <p className="mt-0.5 text-xs text-ink-soft">
-              Comma separated. Tasks, homework, grades and the calendar all share them.
+              {t("Comma separated. Tasks, homework, grades and the calendar all share them.")}
             </p>
             {!done.subjects && (
               <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -224,7 +226,7 @@ export default function OnboardingCard() {
                   value={subjectName}
                   onChange={(e) => setSubjectName(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && addSubjectsFromInput()}
-                  placeholder="Mathe, Englisch, Physik…"
+                  placeholder={t("Mathe, Englisch, Physik…")}
                   className="field flex-1 py-1.5 text-sm"
                   aria-label="Subject names, comma separated"
                 />
@@ -241,11 +243,11 @@ export default function OnboardingCard() {
           {stepBadge(done.portal, 3)}
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium">
-              School portal{" "}
-              {done.portal && <span className="font-mono text-[10px] text-accent uppercase">done</span>}
+              {t("School portal")}{" "}
+              {done.portal && <span className="font-mono text-[10px] text-accent uppercase">{t("done")}</span>}
               {!done.portal && !auth.user && auth.status === "signed-out" && (
                 <span className="ml-2 inline-flex items-center gap-1 font-mono text-[10px] text-ink-soft normal-case">
-                  <UserRound className="size-3" /> sign-in needed for sync
+                  <UserRound className="size-3" /> {t("sign-in needed for sync")}
                 </span>
               )}
             </p>
@@ -291,7 +293,7 @@ export default function OnboardingCard() {
                   onClick={() => void fetchPortal()}
                   disabled={portalFetching || !portal.baseUrl || !portal.username || !portal.password}
                 >
-                  {portalFetching ? "Fetching…" : "Connect"}
+                  {portalFetching ? t("Fetching…") : t("Connect")}
                 </button>
               </div>
             )}

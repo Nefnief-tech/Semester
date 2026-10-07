@@ -6,6 +6,7 @@ import { useSubjectsStore } from "@/lib/store/subjects";
 import { useEventsStore } from "@/lib/store/events";
 import { useTodosStore } from "@/lib/store/todos";
 import { cn, findSubject, toDayKey } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 export const TYPE_ICONS: Record<EventType, LucideIcon> = {
   study: BookOpen,
@@ -19,6 +20,14 @@ export const TYPE_LABELS: Record<EventType, string> = {
   deadline: "Deadline",
   exam: "Exam",
   event: "Event",
+};
+
+/** dot color per type — the compact representation used in month cells */
+export const TYPE_DOT: Record<EventType, string> = {
+  study: "bg-info",
+  deadline: "bg-amber",
+  exam: "bg-accent",
+  event: "bg-ink-soft",
 };
 
 export type CalendarItem =
@@ -53,6 +62,7 @@ export function Chip({
   onClick: () => void;
   className?: string;
 }) {
+  const tt = useT();
   const subjects = useSubjectsStore((s) => s.subjects);
   const color =
     item.kind === "event"
@@ -69,7 +79,7 @@ export function Chip({
           e.stopPropagation();
           onClick();
         }}
-        title={`${TYPE_LABELS[item.event.type]}: ${item.event.title}`}
+        title={`${tt(TYPE_LABELS[item.event.type])}: ${item.event.title}`}
         className={cn(
           "flex w-full cursor-pointer items-center gap-1.5 overflow-hidden rounded-md border bg-card px-1.5 py-1 text-left text-[11px] leading-tight transition-colors hover:border-ink/30",
           isExam && "border-accent/40 bg-accent/[0.08] font-medium hover:border-accent/60",

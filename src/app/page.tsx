@@ -12,6 +12,7 @@ import { useHomeworkStore } from "@/lib/store/homework";
 import { useTimetableStore } from "@/lib/store/timetable";
 import { useHydrated } from "@/lib/hooks";
 import { minutesToClock, timetableNow } from "@/lib/schedule";
+import { useDateLocale, useT } from "@/lib/i18n";
 import type { Homework, StudyEvent, Todo } from "@/lib/types";
 import {
   cn,
@@ -35,6 +36,7 @@ function greeting() {
   if (h < 18) return "Good afternoon";
   return "Good evening";
 }
+/* translated at the call site via t() — the keys are the greeting strings */
 
 type QueueItem =
   | { kind: "todo"; sort: number; todo: Todo; overdue?: boolean }
@@ -50,6 +52,8 @@ export default function DashboardPage() {
   const entries = useGradesStore((s) => s.entries);
   const timetableEntries = useTimetableStore((s) => s.entries);
 
+  const t = useT();
+  const dateLocale = useDateLocale();
   const homeworks = useHomeworkStore((s) => s.homeworks);
   const toggleHomework = useHomeworkStore((s) => s.toggleHomework);
   const openHomework = useMemo(() => homeworks.filter((h) => !h.done), [homeworks]);
@@ -306,22 +310,22 @@ export default function DashboardPage() {
       >
         <div>
           <p className="font-mono text-xs tracking-[0.18em] text-ink-soft uppercase">
-            {format(clock, "EEEE, d MMMM yyyy")}
+            {format(clock, "EEEE, d MMMM yyyy", { locale: dateLocale })}
           </p>
           <h1 className="mt-2 font-display text-4xl leading-[1.05] font-semibold tracking-tight sm:text-5xl">
-            {greeting()}.
+            {t(greeting())}.
             <span className="text-accent italic">
               {stats.dueToday > 0
-                ? ` ${stats.dueToday} ${stats.dueToday === 1 ? "task" : "tasks"} due today.`
-                : " Nothing due today."}
+                ? ` ${stats.dueToday} ${stats.dueToday === 1 ? t("task due today.") : t("tasks due today.")}`
+                : ` ${t("Nothing due today.")}`}
             </span>
           </h1>
           <p className="mt-3 flex gap-5 font-mono text-[11px] text-ink-soft">
             <Link href="/todos" className="transition-colors hover:text-ink">
-              {stats.open} open tasks
+              {stats.open} {t("open tasks")}
             </Link>
             <Link href="/homework" className="transition-colors hover:text-ink">
-              {stats.homeworkOpen} homework
+              {stats.homeworkOpen} {t("homework")}
             </Link>
             {stats.overall !== null && (
               <Link href="/grades" className="transition-colors hover:text-ink">
@@ -338,10 +342,10 @@ export default function DashboardPage() {
               <div className="pl-3">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
                   <p className="font-mono text-[10px] tracking-[0.14em] text-accent uppercase">
-                    Now · until {minutesToClock(lessonNow.current.end)}
+                    {t("Now · until")} {minutesToClock(lessonNow.current.end)}
                   </p>
                   <p className="font-mono text-[10px] text-ink-soft">
-                    {lessonNow.current.endsIn} min left
+                    {lessonNow.current.endsIn} {t("min left")}
                   </p>
                 </div>
                 <p className="mt-1.5 font-display text-3xl font-semibold tracking-tight">
@@ -394,7 +398,7 @@ export default function DashboardPage() {
                 </p>
               </div>
             ) : (
-              <p className="pl-3 text-sm italic text-ink-soft">Lessons are over for today.</p>
+              <p className="pl-3 text-sm italic text-ink-soft">{t("Lessons are over for today.")}</p>
             )}
           </div>
         )}
@@ -415,10 +419,10 @@ export default function DashboardPage() {
                 <span className="font-semibold">{event.title}</span>
                 <span className="font-mono text-[10px] text-ink-soft">
                   {days === 0
-                    ? "today"
+                    ? t("today")
                     : days === 1
-                      ? "tomorrow"
-                      : `in ${days} days`}
+                      ? t("tomorrow")
+                      : t("in X days").replace("{n}", String(days))}
                 </span>
               </Link>
             ))}
@@ -430,13 +434,13 @@ export default function DashboardPage() {
       <section className="rise mb-12" style={{ "--d": ".06s" } as React.CSSProperties}>
         <div className="mb-4 flex items-baseline justify-between">
           <h2 className="font-display text-2xl font-semibold tracking-tight">
-            Today
+            {t("Today")}
             <span className="ml-2 font-mono text-sm font-normal text-ink-soft">
               {todayFocus.length > 0 ? todayFocus.length : ""}
             </span>
           </h2>
           <Link href="/todos" className="section-link">
-            all tasks →
+            {t("all tasks →")}
           </Link>
         </div>
 
@@ -453,7 +457,7 @@ export default function DashboardPage() {
               value={quickTitle}
               onChange={(e) => setQuickTitle(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addQuickTask()}
-              placeholder="Add a task for today and press Enter"
+              placeholder={t("Add a task for today and press Enter")}
               aria-label="Quick-add a task due today"
               className="w-full bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-soft/60"
             />
@@ -461,7 +465,7 @@ export default function DashboardPage() {
 
           {todayFocus.length === 0 ? (
             <p className="px-5 py-6 text-sm italic text-ink-soft">
-              Nothing due today. The desk is calm.
+              {t("Nothing due today. The desk is calm.")}
             </p>
           ) : (
             <ul className="divide-y divide-line">
@@ -484,7 +488,7 @@ export default function DashboardPage() {
           {/* up next — tasks with and without a date */}
           {restTodos.length > 0 && (
             <section className="mb-8 break-inside-avoid">
-              {microHeader("Up next", restTodos.length, "/todos")}
+              {microHeader(t("up next"), restTodos.length, "/todos")}
               <ul className="card divide-y divide-line px-2">
                 {restTodos.map(queueRow)}
               </ul>
@@ -494,7 +498,7 @@ export default function DashboardPage() {
           {/* homework — every open assignment, dated or not */}
           {openHomework.length > 0 && (
             <section className="mb-8 break-inside-avoid">
-              {microHeader("Homework", openHomework.length, "/homework")}
+              {microHeader(t("Homework"), openHomework.length, "/homework")}
               <ul className="card divide-y divide-line px-2">
                 {homeworkQueue.map(queueRow)}
               </ul>
@@ -504,7 +508,7 @@ export default function DashboardPage() {
           {/* this week */}
           {weekSchedule.length > 0 && (
             <section className="mb-8 break-inside-avoid">
-              {microHeader("This week", weekSchedule.length, "/calendar")}
+              {microHeader(t("This week"), weekSchedule.length, "/calendar")}
               <div className="card p-3">
                 <div className="grid grid-cols-7 gap-1">
                   {weekStrip.map(({ key, day, count }) => (
@@ -584,7 +588,7 @@ export default function DashboardPage() {
           {/* subjects */}
           {subjectRows.length > 0 && (
             <section className="mb-8 break-inside-avoid">
-              {microHeader("Subjects", subjectRows.length, "/grades")}
+              {microHeader(t("Subjects"), subjectRows.length, "/grades")}
               <ul className="card divide-y divide-line px-4">
                 {subjectRows.map(({ subject, avg }) => {
                   const tone = avg === null ? ("neutral" as const) : pointsTone(avg);
@@ -624,7 +628,7 @@ export default function DashboardPage() {
         <button
           className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 font-mono text-[10px] tracking-wide text-ink-soft/70 uppercase transition-colors hover:text-marker"
           onClick={() => {
-            if (!window.confirm("Delete all tasks, grades, events and subjects? This cannot be undone."))
+            if (!window.confirm(t("Delete all tasks, grades, events and subjects? This cannot be undone.")))
               return;
             useTodosStore.getState().clearAll();
             useGradesStore.getState().clearAll();
@@ -633,7 +637,7 @@ export default function DashboardPage() {
             useHomeworkStore.getState().clearAll();
           }}
         >
-          <Trash2 className="size-3" /> clear all data
+          <Trash2 className="size-3" /> {t("clear all data")}
         </button>
       </footer>
     </div>

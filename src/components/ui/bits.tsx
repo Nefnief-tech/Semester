@@ -3,6 +3,7 @@
 import { Clock, Flag } from "lucide-react";
 import type { Priority } from "@/lib/types";
 import { cn, dueInfo, pointsToGrade, TONE_CLASSES, type Tone } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 export function SubjectDot({ color, className }: { color: string; className?: string }) {
   return (
@@ -24,6 +25,7 @@ export function SubjectTag({ name, color }: { name: string; color: string }) {
 }
 
 export function PriorityBadge({ priority }: { priority: Priority }) {
+  const t = useT();
   const tone: Record<Priority, Tone> = {
     high: "bad",
     medium: "warn",
@@ -32,12 +34,13 @@ export function PriorityBadge({ priority }: { priority: Priority }) {
   return (
     <span className={cn("chip font-mono uppercase", TONE_CLASSES[tone[priority]])}>
       <Flag className="size-3" />
-      {priority}
+      {t(priority)}
     </span>
   );
 }
 
 export function DueChip({ due, done }: { due?: string; done?: boolean }) {
+  const t = useT();
   const info = dueInfo(due);
   if (!info) return null;
   const alarming = info.overdue && !done;
@@ -51,7 +54,7 @@ export function DueChip({ due, done }: { due?: string; done?: boolean }) {
       )}
     >
       <Clock className="size-3" />
-      {alarming ? `Overdue since ${info.label}` : info.label}
+      {alarming ? `${t("Overdue since")} ${info.label}` : info.label}
     </span>
   );
 }

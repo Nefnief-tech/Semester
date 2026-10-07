@@ -1,5 +1,6 @@
 import { format, parseISO, isValid } from "date-fns";
 import type { GradeEntry, Priority, Subject } from "./types";
+import { currentLang, dateLocale } from "./i18n";
 
 export function cn(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
@@ -85,12 +86,13 @@ export function dueInfo(due?: string): DueInfo | null {
   const dayDiff = Math.round(
     (startOfDay(date).getTime() - startOfDay(today).getTime()) / 86_400_000,
   );
+  const de = currentLang() === "de";
   let label: string;
-  if (dayDiff === 0) label = "Today";
-  else if (dayDiff === 1) label = "Tomorrow";
-  else if (dayDiff === -1) label = "Yesterday";
-  else if (dayDiff > 1 && dayDiff < 7) label = format(date, "EEEE");
-  else label = format(date, "d MMM");
+  if (dayDiff === 0) label = de ? "Heute" : "Today";
+  else if (dayDiff === 1) label = de ? "Morgen" : "Tomorrow";
+  else if (dayDiff === -1) label = de ? "Gestern" : "Yesterday";
+  else if (dayDiff > 1 && dayDiff < 7) label = format(date, "EEEE", { locale: dateLocale() });
+  else label = format(date, "d MMM", { locale: dateLocale() });
   if (due?.includes("T")) label += ` · ${format(date, "HH:mm")}`;
   return { date, overdue: dayDiff < 0, isToday: dayDiff === 0, label };
 }

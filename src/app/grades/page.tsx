@@ -8,6 +8,7 @@ import { useGradesStore } from "@/lib/store/grades";
 import { useHydrated } from "@/lib/hooks";
 import { formatPoints, weightedAverage } from "@/lib/utils";
 import PageSkeleton from "@/components/ui/PageSkeleton";
+import { useT } from "@/lib/i18n";
 import { EmptyState, GradeBadge } from "@/components/ui/bits";
 import PointsTable from "@/components/grades/PointsTable";
 import SubjectCard from "@/components/grades/SubjectCard";
@@ -16,6 +17,7 @@ import GradeFormModal from "@/components/grades/GradeFormModal";
 
 export default function GradesPage() {
   const hydrated = useHydrated();
+  const t = useT();
   const subjects = useSubjectsStore((s) => s.subjects);
   const entries = useGradesStore((s) => s.entries);
   const removeSubject = useSubjectsStore((s) => s.removeSubject);
@@ -57,21 +59,21 @@ export default function GradesPage() {
     <div>
       <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-4xl font-semibold tracking-tight">Grades</h1>
+          <h1 className="font-display text-4xl font-semibold tracking-tight">{t("Grades")}</h1>
           <p className="mt-1 font-mono text-xs tracking-wide text-ink-soft">
-            Punkte system (0–15) · weighted averages
+            Punktesystem (0–15) · gewichtete Durchschnitte
           </p>
         </div>
         <div className="flex gap-2">
           <button className="btn-ghost" onClick={() => setSubjectModal({ open: true })}>
-            <Plus className="size-4" /> Subject
+            <Plus className="size-4" /> {t("Subject")}
           </button>
           <button
             className="btn-primary"
             onClick={() => setGradeModal({ open: true })}
             disabled={subjects.length === 0}
           >
-            <Plus className="size-4" /> Add grade
+            <Plus className="size-4" /> {t("Add grade")}
           </button>
         </div>
       </header>
@@ -80,7 +82,7 @@ export default function GradesPage() {
       <div className="card mb-8 flex flex-wrap items-center gap-x-8 gap-y-4 px-6 py-5">
         <div>
           <span className="font-mono text-[10px] tracking-[0.14em] text-ink-soft uppercase">
-            overall average
+            gesamt
           </span>
           <p className="font-display text-5xl leading-tight font-semibold tracking-tight">
             {overall === null ? "-" : formatPoints(overall)}
@@ -102,8 +104,8 @@ export default function GradesPage() {
         <div className="mt-8">
           <EmptyState
             icon={<BookOpen className="size-8" />}
-            title="No subjects yet"
-            hint="Subjects are shared across tasks, grades and the calendar. Create one to start tracking grades."
+            title={t("No subjects yet")}
+            hint={t("Subjects are shared across tasks, grades and the calendar. Create one to start tracking grades.")}
             action={
               <button className="btn-primary" onClick={() => setSubjectModal({ open: true })}>
                 <Plus className="size-4" /> New subject

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { BookOpen, FileText, Layers, ListChecks, MessageCircle, Sparkles } from "lucide-react";
 import { useHydrated } from "@/lib/hooks";
+import { useT } from "@/lib/i18n";
 import { useStudyRoomStore } from "@/lib/store/studyroom";
 import { currentUserInAiTeam, getAuthHeaders } from "@/lib/auth/appwrite";
 import { useAuthStore } from "@/lib/store/auth";
@@ -19,6 +20,7 @@ type MainTab = "chat" | "quiz" | "flashcards";
 
 export default function StudyRoomPage() {
   const hydrated = useHydrated();
+  const t = useT();
   const documents = useStudyRoomStore((s) => s.documents);
   const configured = useStudyRoomStore((s) => s.configured);
   const setDocuments = useStudyRoomStore((s) => s.setDocuments);
@@ -63,19 +65,19 @@ export default function StudyRoomPage() {
   if (!hydrated) return <PageSkeleton />;
 
   const MOBILE_TABS: Array<{ id: Tab; label: string; icon: typeof FileText; badge?: number }> = [
-    { id: "documents", label: "Documents", icon: FileText, badge: documents.length },
-    { id: "flashcards", label: "Flashcards", icon: Layers, badge: decks.length },
-    { id: "quiz", label: "Quiz", icon: ListChecks },
-    { id: "chat", label: "Chat", icon: MessageCircle },
+    { id: "documents", label: t("Documents"), icon: FileText, badge: documents.length },
+    { id: "flashcards", label: t("Flashcards"), icon: Layers, badge: decks.length },
+    { id: "quiz", label: t("Quiz"), icon: ListChecks },
+    { id: "chat", label: t("Chat"), icon: MessageCircle },
   ];
 
   const segmented = (
     <div className="inline-flex gap-1 rounded-full border border-line bg-card p-1">
       {(
         [
-          { id: "chat" as MainTab, label: "Chat", icon: MessageCircle },
-          { id: "quiz" as MainTab, label: "Quiz", icon: ListChecks },
-          { id: "flashcards" as MainTab, label: "Flashcards", icon: Layers, badge: decks.length },
+          { id: "chat" as MainTab, label: t("Chat"), icon: MessageCircle },
+          { id: "quiz" as MainTab, label: t("Quiz"), icon: ListChecks },
+          { id: "flashcards" as MainTab, label: t("Flashcards"), icon: Layers, badge: decks.length },
         ]
       ).map(({ id, label, icon: Icon, badge }) => (
         <button
@@ -114,7 +116,7 @@ export default function StudyRoomPage() {
             <Sparkles className="size-5 text-accent" />
           </h1>
           <p className="mt-1 font-mono text-xs tracking-wide text-ink-soft">
-            upload material, tick the context, then chat, quiz or drill flashcards
+            {t("upload material, tick the context, then chat, quiz or drill flashcards")}
           </p>
         </div>
         <span
@@ -125,7 +127,7 @@ export default function StudyRoomPage() {
               : "border-amber/40 bg-amber/10 text-amber",
           )}
         >
-          {configured ? "AI ready" : "AI key missing"}
+          {configured ? t("AI ready") : t("AI key missing")}
         </span>
       </header>
 
@@ -134,7 +136,7 @@ export default function StudyRoomPage() {
         <section>
           <div className="mb-4 flex min-h-9 items-center justify-between gap-3">
             <h2 className="flex items-center gap-2 font-display text-base font-semibold tracking-tight">
-              <FileText className="size-4 text-accent" /> Material
+              <FileText className="size-4 text-accent" /> {t("Material")}
             </h2>
             {documents.length > 0 && (
               <span className="font-mono text-[10px] tracking-wide text-ink-soft uppercase">
@@ -151,10 +153,10 @@ export default function StudyRoomPage() {
           <div className="mb-4 flex min-h-9 items-center justify-between gap-4">
             <h2 className="font-display text-base font-semibold tracking-tight">
               {mainTab === "chat"
-                ? "Ask your documents"
+                ? t("Ask your documents")
                 : mainTab === "quiz"
-                  ? "Test yourself"
-                  : "Practice"}
+                  ? t("Test yourself")
+                  : t("Practice")}
             </h2>
             {segmented}
           </div>
@@ -212,12 +214,10 @@ export default function StudyRoomPage() {
             </div>
             <div>
               <h3 className="font-display text-lg font-semibold tracking-tight">
-                AI is member-only right now
+                {t("AI is member-only right now")}
               </h3>
               <p className="mt-1 text-sm leading-relaxed text-ink-soft">
-                Chat and flashcard generation are limited to members of the AI team while
-                things are in closed testing. Your documents still upload and stay synced.
-                Ask the admin to add your account and the features unlock instantly.
+                {t("Chat and flashcard generation are limited to members of the AI team while things are in closed testing. Your documents still upload and stay synced. Ask the admin to add your account and the features unlock instantly.")}
               </p>
             </div>
           </div>

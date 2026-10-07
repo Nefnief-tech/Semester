@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   Calendar,
@@ -12,6 +13,8 @@ import {
   Undo2,
 } from "lucide-react";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import { useT } from "@/lib/i18n";
+import LangToggle from "@/components/ui/LangToggle";
 
 /**
  * Marketing landing at /landing — "Plans change at 7:45".
@@ -353,6 +356,7 @@ html:has(.lp) { scroll-behavior: smooth; }
 `;
 
 export default function LandingPage() {
+  const t = useT();
   // the desk card shows today's real date — written straight into the DOM
   // after mount (an external system), so there is no SSR mismatch
   const dateRef = useRef<HTMLSpanElement>(null);
@@ -463,12 +467,13 @@ export default function LandingPage() {
             Semester.
           </a>
           <div className="nav-links">
-            <a href="/landing#features">Features</a>
-            <a href="/landing#system">How it works</a>
-            <Link href="/docs">Docs</Link>
+            <a href="/landing#features">{t("Features")}</a>
+            <a href="/landing#system">{t("How it works")}</a>
+            <Link href="/docs">{t("Docs")}</Link>
+            <LangToggle />
             <ThemeToggle />
             <Link className="btn btn-primary nav-cta" href="/">
-              Open the app
+              {t("Open the app")}
             </Link>
           </div>
         </div>
@@ -479,24 +484,22 @@ export default function LandingPage() {
         <div className="wrap hero-grid">
           <div>
             <h1 className="display">
-              Plans change at 7:45.
+              {t("Plans change at 7:45.")}
               <br />
-              <em>Your desk doesn&apos;t.</em>
+              <em>{t("Your desk doesn't.")}</em>
             </h1>
             <p className="lede">
-              Semester puts your timetable, tasks, homework, grades and study
-              material on one desk that keeps up when the substitute plan flips.
-              Web and phone, always in sync.
+              {t("Semester puts your timetable, tasks, homework, grades and study material on one desk that keeps up when the substitute plan flips. Web and phone, always in sync.")}
             </p>
             <div className="hero-ctas">
               <Link className="btn btn-primary" href="/">
-                Open your desk
+                {t("Open your desk")}
               </Link>
               <a
                 className="btn btn-ghost"
-                href="https://github.com/Nefnief-tech/study/releases/tag/v0.1"
+                href="https://github.com/Nefnief-tech/study/releases"
               >
-                Download for Android
+                {t("Download for Android")}
               </a>
             </div>
           </div>
@@ -512,15 +515,15 @@ export default function LandingPage() {
                 aria-label="Preview of Semester's Today view: the current lesson with a progress bar and two open tasks"
               >
                 <div className="head">
-                  <span className="hello">Today</span>
+                  <span className="hello">{t("Today")}</span>
                   <span className="date" ref={dateRef}>
                     &nbsp;
                   </span>
                 </div>
                 <div className="now">
-                  <span className="k">Now · until 10:45</span>
+                  <span className="k">{t("Now · until")} 10:45</span>
                   <div className="s">Sport</div>
-                  <div className="m">Gym · Fr. Lauf · 18 min left</div>
+                  <div className="m">{t("Gym · Fr. Lauf · 18 min left")}</div>
                   <div className="bar">
                     <i />
                   </div>
@@ -529,26 +532,26 @@ export default function LandingPage() {
                   <li>
                     <span className="tick done" />
                     Geschichte Quellenarbeit
-                    <span className="due">done</span>
+                    <span className="due">{t("done")}</span>
                   </li>
                   <li>
                     <span className="tick" />
                     Mathe Blatt 14
-                    <span className="due hot">today</span>
+                    <span className="due hot">{t("today")}</span>
                   </li>
                   <li>
                     <span className="tick" />
                     Englisch Vokabeln
-                    <span className="due">tomorrow</span>
+                    <span className="due">{t("tomorrow")}</span>
                   </li>
                 </ul>
               </div>
               <div className="float-pane fp-avg">
-                <span className="k">avg. grade</span>
+                <span className="k">{t("avg. grade")}</span>
                 <b>2,3</b>
               </div>
               <div className="float-pane fp-next">
-                <span className="k">tomorrow, 3rd pd.</span>
+                <span className="k">{t("tomorrow, 3rd pd.")}</span>
                 <b>Sport → Fr. Lauf</b>
               </div>
             </div>
@@ -577,16 +580,12 @@ export default function LandingPage() {
         <div className="wrap">
           <div className="story">
             <div className="reveal">
-              <span className="stamp">7:45 · the plan flips</span>
+              <span className="stamp">7:45 · {t("DER PLAN KIPPT")}</span>
               <h2 className="display" style={{ fontSize: "clamp(30px, 3.6vw, 48px)", lineHeight: 1.04, marginBottom: 14 }}>
-                The plan you copied this morning is already old.
+                {t("The plan you copied this morning is already old.")}
               </h2>
               <p style={{ color: "var(--lp-soft)", fontSize: 16.5 }}>
-                Semester pulls the substitute plan straight from your school
-                portal and rewrites the grid before you reach school:
-                cancellations crossed out, substitutes and rooms filled in.
-                Upcoming Schulaufgaben land on your calendar and in your tasks
-                on their own.
+                {t("Semester pulls the substitute plan straight from your school portal and rewrites the grid before you reach school: cancellations crossed out, substitutes and rooms filled in. Upcoming Schulaufgaben land on your calendar and in your tasks on their own.")}
               </p>
             </div>
 
@@ -642,18 +641,19 @@ export default function LandingPage() {
       <section>
         <div className="wrap">
           <div className="section-head reveal">
-            <h2 className="display">The desk itself.</h2>
+            <h2 className="display">{t("The desk itself.")}</h2>
             <p>
-              One overview with everything that matters today: open tasks, due
-              dates, your grade average and the week ahead.
+              {t("One overview with everything that matters today: open tasks, due dates, your grade average and the week ahead.")}
             </p>
           </div>
           <div className="desk-shot shot-frame reveal">
-            <img
+            <Image
               src="/shots/desk.png"
               alt="The Semester overview: greeting, current lesson, task queue, week strip and subject grades"
               width={1720}
               height={1160}
+              priority
+              sizes="(max-width: 1200px) 100vw, 1144px"
             />
           </div>
         </div>
@@ -663,21 +663,21 @@ export default function LandingPage() {
       <section>
         <div className="wrap">
           <div className="section-head reveal">
-            <h2 className="display">Everything a school week throws at you.</h2>
-            <p>Six tools that share one set of subjects, one timetable and one database. No export-import dances between apps.</p>
+            <h2 className="display">{t("Everything a school week throws at you.")}</h2>
+            <p>{t("Six tools that share one set of subjects, one timetable and one database. No export-import dances between apps.")}</p>
           </div>
 
           <div className="bento">
             <div className="cell span7 reveal">
               <div className="icon"><GraduationCap size={17} /></div>
-              <h3>Tasks &amp; homework</h3>
-              <p>Due dates with times, priorities, subject tags and notes. The overview groups them by urgency: overdue, today, this week.</p>
+              <h3>{t("Tasks & homework")}</h3>
+              <p>{t("Due dates with times, priorities, subject tags and notes. The overview groups them by urgency: overdue, today, this week.")}</p>
             </div>
 
             <div className="cell span5 reveal" style={{ "--d": ".08s" } as React.CSSProperties}>
               <div className="icon"><Copy size={17} /></div>
-              <h3>Grades</h3>
-              <p>Weighted per-subject averages in the Punkte system, shown as the German Note scale.</p>
+              <h3>{t("Grades")}</h3>
+              <p>{t("Weighted per-subject averages in the Punkte system, shown as the German Note scale.")}</p>
               <div className="grade-demo">
                 <span className="g">2,3</span>
                 <span className="bar"><i /></span>
@@ -688,40 +688,41 @@ export default function LandingPage() {
             <div className="cell span12 dotted-bg reveal" style={{ "--d": ".05s" } as React.CSSProperties}>
               <div style={{ maxWidth: "46ch" }}>
                 <div className="icon"><Clock size={17} /></div>
-                <h3>Timetable with live substitutions</h3>
-                <p>Import your weekly grid once, then watch the school portal rewrite it live. Double periods, rooms and substitutes included.</p>
+                <h3>{t("Timetable with live substitutions")}</h3>
+                <p>{t("Import your weekly grid once, then watch the school portal rewrite it live. Double periods, rooms and substitutes included.")}</p>
               </div>
               <div className="shot-frame" style={{ width: "min(480px, 100%)" }}>
-                <img src="/shots/timetable.png" alt="Semester timetable with a cancelled and a substituted lesson marked" width={1720} height={1160} />
+                <Image src="/shots/timetable.png" alt="Semester timetable with a cancelled and a substituted lesson marked" width={1720} height={1160} sizes="480px" />
               </div>
             </div>
 
             <div className="cell span4 reveal">
               <div className="icon"><Calendar size={17} /></div>
-              <h3>Calendar</h3>
-              <p>Month and week views that combine events, exams, deadlines and task due dates in one place.</p>
+              <h3>{t("Calendar")}</h3>
+              <p>{t("Month and week views that combine events, exams, deadlines and task due dates in one place.")}</p>
             </div>
 
             <div className="cell span4 reveal" style={{ "--d": ".08s" } as React.CSSProperties}>
               <div className="icon"><Undo2 size={17} /></div>
-              <h3>Daily digest</h3>
-              <p>Every afternoon, a push with tomorrow&apos;s classes, overdue homework and upcoming exams.</p>
+              <h3>{t("Daily digest")}</h3>
+              <p>{t("Every afternoon, a push with tomorrow's classes, overdue homework and upcoming exams.")}</p>
             </div>
 
             <div className="cell span4 reveal" style={{ "--d": ".16s" } as React.CSSProperties}>
+              <div className="glow-top" />
               <div className="icon"><Sparkles size={17} /></div>
-              <h3>AI study room</h3>
-              <p>Chat with grounded answers that cite your documents, and auto-build flashcard decks.</p>
+              <h3>{t("AI study room")}</h3>
+              <p>{t("Chat with grounded answers that cite your documents, and auto-build flashcard decks.")}</p>
             </div>
 
             <div className="cell span12 reveal" style={{ "--d": ".05s" } as React.CSSProperties}>
               <div style={{ maxWidth: "46ch" }}>
                 <div className="icon"><FileText size={17} /></div>
-                <h3>Your documents, answered.</h3>
-                <p>Upload PDFs, slides or notes and ask away. Answers are grounded in your material and cite the exact page.</p>
+                <h3>{t("Your documents, answered.")}</h3>
+                <p>{t("Upload PDFs, slides or notes and ask away. Answers are grounded in your material and cite the exact page.")}</p>
               </div>
               <div className="shot-frame" style={{ width: "min(480px, 100%)" }}>
-                <img src="/shots/room.png" alt="AI study room chat answering with a citation from an uploaded document" width={1720} height={1160} />
+                <Image src="/shots/room.png" alt="AI study room chat answering with a citation from an uploaded document" width={1720} height={1160} sizes="480px" />
               </div>
             </div>
           </div>
@@ -732,8 +733,8 @@ export default function LandingPage() {
       <section className="day" id="system">
         <div className="wrap">
           <div className="section-head reveal">
-            <h2 className="display">One Tuesday, on Semester.</h2>
-            <p>From the morning plan flip to the evening study session. The boring parts are the feature.</p>
+            <h2 className="display">{t("One Tuesday, on Semester.")}</h2>
+            <p>{t("From the morning plan flip to the evening study session. The boring parts are the feature.")}</p>
           </div>
 
           <div className="timeline">
@@ -741,45 +742,45 @@ export default function LandingPage() {
               <div className="t-time">07:45</div>
               <div className="t-dot" />
               <div className="t-card">
-                <span className="tagline">substitutions</span>
-                <h3>The portal flips.</h3>
-                <p>Sport is cancelled, Fr. Lauf takes over in the Gym. The grid on your phone is already rewritten before you leave the house.</p>
+                <span className="tagline">{t("substitutions")}</span>
+                <h3>{t("The portal flips.")}</h3>
+                <p>{t("Sport is cancelled, Fr. Lauf takes over in the Gym. The grid on your phone is already rewritten before you leave the house.")}</p>
               </div>
             </div>
             <div className="t-row reveal">
               <div className="t-time">08:00</div>
               <div className="t-dot" />
               <div className="t-card">
-                <span className="tagline">the grid knows</span>
-                <h3>Now: Sport, Gym, 18 minutes left.</h3>
-                <p>The overview shows the running lesson with a progress bar, then the next one. No counting periods in your head.</p>
+                <span className="tagline">{t("the grid knows")}</span>
+                <h3>{t("Now: Sport, Gym, 18 minutes left.")}</h3>
+                <p>{t("The overview shows the running lesson with a progress bar, then the next one. No counting periods in your head.")}</p>
               </div>
             </div>
             <div className="t-row reveal">
               <div className="t-time">13:05</div>
               <div className="t-dot" />
               <div className="t-card">
-                <span className="tagline">tasks</span>
-                <h3>Tick it off, type the next one.</h3>
-                <p>Today&apos;s pile at the top, quick-add one field below it. Homework and tasks live side by side and land on the calendar by themselves.</p>
+                <span className="tagline">{t("Tasks")}</span>
+                <h3>{t("Tick it off, type the next one.")}</h3>
+                <p>{t("Today's pile at the top, quick-add one field below it. Homework and tasks live side by side and land on the calendar by themselves.")}</p>
               </div>
             </div>
             <div className="t-row reveal">
               <div className="t-time">17:00</div>
               <div className="t-dot" />
               <div className="t-card">
-                <span className="tagline">daily digest</span>
-                <h3>Your phone knows tomorrow.</h3>
-                <p>An afternoon push: tomorrow&apos;s classes, what is overdue, which Schulaufgaben are creeping closer.</p>
+                <span className="tagline">{t("Daily digest")}</span>
+                <h3>{t("Your phone knows tomorrow.")}</h3>
+                <p>{t("An afternoon push: tomorrow's classes, what is overdue, which Schulaufgaben are creeping closer.")}</p>
               </div>
             </div>
             <div className="t-row reveal">
               <div className="t-time">21:30</div>
               <div className="t-dot" />
               <div className="t-card">
-                <span className="tagline">study room</span>
-                <h3>Ask your own documents.</h3>
-                <p>Upload the history PDF once, then ask. Answers cite the exact page, and flashcard decks build themselves.</p>
+                <span className="tagline">{t("Study Room")}</span>
+                <h3>{t("Ask your own documents.")}</h3>
+                <p>{t("Upload the history PDF once, then ask. Answers cite the exact page, and flashcard decks build themselves.")}</p>
               </div>
             </div>
           </div>
@@ -791,19 +792,19 @@ export default function LandingPage() {
         <div className="wrap reveal">
           <div className="specs">
             <div className="spec">
-              <div className="k">Autosave</div>
-              <h3>No save buttons, anywhere.</h3>
-              <p>Every edit commits as you type. Closing a form can never lose input, on web and phone alike.</p>
+              <div className="k">{t("Autosave")}</div>
+              <h3>{t("No save buttons, anywhere.")}</h3>
+              <p>{t("Every edit commits as you type. Closing a form can never lose input, on web and phone alike.")}</p>
             </div>
             <div className="spec">
-              <div className="k">Sync</div>
-              <h3>Offline first, always agreeing.</h3>
-              <p>Edits live locally first and win over the cloud until their push lands. Devices agree without coordination.</p>
+              <div className="k">{t("Sync")}</div>
+              <h3>{t("Offline first, always agreeing.")}</h3>
+              <p>{t("Edits live locally first and win over the cloud until their push lands. Devices agree without coordination.")}</p>
             </div>
             <div className="spec">
-              <div className="k">Privacy</div>
-              <h3>Credentials stay put.</h3>
-              <p>Portal logins never leave your device except to your own server for the fetch. Self-hosted, open source.</p>
+              <div className="k">{t("Privacy")}</div>
+              <h3>{t("Credentials stay put.")}</h3>
+              <p>{t("Portal logins never leave your device except to your own server for the fetch. Self-hosted, open source.")}</p>
             </div>
           </div>
         </div>
@@ -814,15 +815,15 @@ export default function LandingPage() {
         <div className="wrap">
           <div className="cta-box reveal">
             <div>
-              <h2>Set up your desk in one afternoon.</h2>
-              <p>Paste your timetable as JSON, connect your school portal, install the app. Everything else follows.</p>
+              <h2>{t("Set up your desk in one afternoon.")}</h2>
+              <p>{t("Paste your timetable as JSON, connect your school portal, install the app. Everything else follows.")}</p>
             </div>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <Link className="btn btn-primary" href="/">
-                Open your desk
+                {t("Open your desk")}
               </Link>
               <a className="btn btn-ghost" href="https://github.com/Nefnief-tech/study#readme">
-                Read the docs
+                {t("Read the docs")}
               </a>
             </div>
           </div>
@@ -835,7 +836,7 @@ export default function LandingPage() {
             {brand}
             Semester.
           </a>
-          <span>Open source and self-hostable.</span>
+          <span>{t("Open source and self-hostable.")}</span>
             <div className="foot-right">
               <Link href="/docs">Docs</Link>
               <a href="https://github.com/Nefnief-tech/study">GitHub</a>

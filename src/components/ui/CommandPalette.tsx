@@ -17,6 +17,7 @@ import {
 import type { Route } from "next";
 import { cn, toDayKey } from "@/lib/utils";
 import { useTodosStore } from "@/lib/store/todos";
+import { currentLang, useT } from "@/lib/i18n";
 import { useHomeworkStore } from "@/lib/store/homework";
 import { useEventsStore } from "@/lib/store/events";
 import { syncNow } from "@/lib/auth/sync";
@@ -35,7 +36,7 @@ interface Command {
   run: () => void;
 }
 
-const PAGES: Array<{ href: Route; label: string }> = [
+const PAGES_SRC: Array<{ href: Route; label: string }> = [
   { href: "/", label: "Overview" },
   { href: "/todos", label: "Tasks" },
   { href: "/homework", label: "Homework" },
@@ -50,6 +51,7 @@ const PageIcon = ArrowRight;
 
 function PaletteOverlay({ onClose }: { onClose: () => void }) {
   const router = useRouter();
+  const t = useT();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(0);
   // the overlay remounts on open, so this is the live theme at open time
@@ -61,11 +63,11 @@ function PaletteOverlay({ onClose }: { onClose: () => void }) {
 
   const commands = useMemo<Command[]>(() => {
     const q = query.trim().toLowerCase();
-    const pageCmds: Command[] = PAGES.filter((p) => !q || p.label.toLowerCase().includes(q)).map(
+    const pageCmds: Command[] = PAGES_SRC.filter((p) => !q || t(p.label).toLowerCase().includes(q)).map(
       (p) => ({
         id: `page-${p.href}`,
-        label: p.label,
-        hint: "go to",
+        label: t(p.label),
+        hint: t("go to"),
         icon: PageIcon,
         run: () => {
           router.push(p.href);
@@ -78,7 +80,7 @@ function PaletteOverlay({ onClose }: { onClose: () => void }) {
         ? [
             {
               id: "create-task",
-              label: `New task: "${query.trim()}"`,
+              label: `${t("New task:")} "${query.trim()}"`,
               hint: "Enter",
               icon: Plus,
               run: () => {
@@ -89,7 +91,7 @@ function PaletteOverlay({ onClose }: { onClose: () => void }) {
             },
             {
               id: "create-homework",
-              label: `New homework: "${query.trim()}"`,
+              label: `${t("New homework:")} "${query.trim()}"`,
               hint: "Enter",
               icon: BookOpen,
               run: () => {
@@ -102,8 +104,8 @@ function PaletteOverlay({ onClose }: { onClose: () => void }) {
             },
             {
               id: "create-exam",
-              label: `New exam (SA): "${query.trim()}"`,
-              hint: "today",
+              label: `${t("New exam (SA):")} "${query.trim()}"`,
+              hint: t("today"),
               icon: GraduationCap,
               run: () => {
                 // quick capture: dated today, refine on the calendar
@@ -121,8 +123,8 @@ function PaletteOverlay({ onClose }: { onClose: () => void }) {
     const actions: Command[] = [
       {
         id: "toggle-theme",
-        label: dark ? "Switch to light mode" : "Switch to dark mode",
-        hint: "theme",
+        label: dark ? t("Switch to light mode") : t("Switch to dark mode"),
+        hint: t("theme"),
         icon: dark ? Sun : Moon,
         run: () => {
           const next = !dark;
@@ -135,8 +137,8 @@ function PaletteOverlay({ onClose }: { onClose: () => void }) {
       },
       {
         id: "sync-now",
-        label: "Sync now",
-        hint: "sync",
+        label: t("Sync now"),
+        hint: t("sync"),
         icon: RefreshCw,
         run: () => {
           void syncNow();
@@ -148,7 +150,7 @@ function PaletteOverlay({ onClose }: { onClose: () => void }) {
     const matches = (c: { label: string; hint?: string }) =>
       !q || c.label.toLowerCase().includes(q) || c.hint?.includes(q);
     return [...pageCmds.filter(matches), ...createCmds, ...actions.filter(matches)];
-  }, [query, router, onClose, dark]);
+  }, [query, router, onClose, dark, t]);
 
   // clamped in render — no effect needed to keep the selection in range
   const sel = Math.min(selected, Math.max(0, commands.length - 1));
@@ -191,7 +193,7 @@ function PaletteOverlay({ onClose }: { onClose: () => void }) {
                 onClose();
               }
             }}
-            placeholder="Jump somewhere, or type a task, homework or exam"
+            placeholder={t("Jump somewhere, or type a task, homework or exam")}
             aria-label="Command palette input"
             className="w-full bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-soft/60"
           />
@@ -202,7 +204,7 @@ function PaletteOverlay({ onClose }: { onClose: () => void }) {
 
         <ul className="max-h-[50vh] overflow-y-auto p-1.5">
           {commands.length === 0 && (
-            <li className="px-3 py-6 text-center text-sm italic text-ink-soft">Nothing matches.</li>
+            <li className="px-3 py-6 text-center text-sm italic text-ink-soft">{t("Nothing matches.")}</li>
           )}
           {commands.map((cmd, i) => (
             <li key={cmd.id}>
@@ -228,8 +230,8 @@ function PaletteOverlay({ onClose }: { onClose: () => void }) {
         </ul>
 
         <div className="flex items-center gap-4 border-t border-line px-4 py-2 font-mono text-[10px] text-ink-soft">
-          <span>Enter to run</span>
-          <span>↑↓ to choose</span>
+          <span>{t("Enter to run")}</span>
+          <span>{t("↑↓ to choose")}</span>
         </div>
       </div>
     </div>

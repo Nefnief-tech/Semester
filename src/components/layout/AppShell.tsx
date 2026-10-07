@@ -17,10 +17,12 @@ import {
 } from "lucide-react";
 import type { Route } from "next";
 import { cn, formatClock } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 import { initSync, signOut } from "@/lib/auth/sync";
 import { pingAppwrite } from "@/lib/auth/appwrite";
 import { useAuthStore } from "@/lib/store/auth";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import LangToggle from "@/components/ui/LangToggle";
 import CommandPalette from "@/components/ui/CommandPalette";
 
 const NAV: Array<{ href: Route; label: string; icon: LucideIcon }> = [
@@ -55,6 +57,7 @@ export function BrandMark({ className }: { className?: string }) {
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const auth = useAuthStore();
+  const t = useT();
 
   useEffect(() => {
     void initSync();
@@ -67,16 +70,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   const syncLabel =
     auth.status === "loading"
-      ? "checking session…"
+      ? t("checking session…")
       : !auth.online
-        ? "offline, saved locally"
+        ? t("offline, saved locally")
         : auth.syncing
-          ? "syncing…"
+          ? t("syncing…")
           : auth.syncError
-            ? "sync error"
+            ? t("sync error")
             : auth.lastSyncedAt
-              ? `synced · ${formatClock(auth.lastSyncedAt)}`
-              : "not synced yet";
+              ? `${t("synced")} · ${formatClock(auth.lastSyncedAt)}`
+              : t("not synced yet");
 
   // the marketing landing + docs render full-bleed — no sidebar, no top bar
   if (pathname === "/landing" || pathname.startsWith("/docs")) return <>{children}</>;
@@ -95,7 +98,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <span className="text-accent">.</span>
             </span>
             <span className="mt-1 block font-mono text-[9px] tracking-[0.22em] text-ink-soft uppercase">
-              the study desk
+              {t("the study desk")}
             </span>
           </span>
         </Link>
@@ -118,7 +121,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   <span className="absolute left-0 top-1/2 h-4 w-1 -translate-y-1/2 rounded-r-full bg-accent" />
                 )}
                 <Icon className="size-4" strokeWidth={active ? 2.2 : 1.8} />
-                {label}
+                {t(label)}
               </Link>
             );
           })}
@@ -131,7 +134,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           className="mt-3 flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink"
         >
           <Search className="size-4" />
-          Quick menu
+          {t("Quick menu")}
           <kbd className="ml-auto rounded border border-line bg-paper px-1.5 py-0.5 font-mono text-[9px]">
             ⌘K
           </kbd>
@@ -141,13 +144,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           {auth.status === "unconfigured" ? (
             <div className="flex items-start justify-between gap-3">
               <p className="font-mono text-[10px] leading-relaxed text-ink-soft">
-                Data lives in your browser
+                {t("Data lives in your browser")}
                 <br />
-                (localStorage), nothing
+                {t("(localStorage), nothing")}
                 <br />
-                leaves this device.
+                {t("leaves this device.")}
               </p>
-              <ThemeToggle />
+              <div className="flex flex-col items-end gap-2">
+                <LangToggle />
+                <ThemeToggle />
+              </div>
             </div>
           ) : auth.status === "signed-in" && auth.user ? (
             <div className="space-y-2.5">
@@ -171,11 +177,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 </div>
               </Link>
               <div className="flex items-center justify-between">
+                <LangToggle />
                 <button
                   onClick={() => void signOut()}
                   className="cursor-pointer font-mono text-[10px] tracking-wide text-ink-soft uppercase transition-colors hover:text-marker"
                 >
-                  sign out
+                  {t("sign out")}
                 </button>
                 <ThemeToggle />
               </div>
@@ -184,7 +191,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <div className="flex items-start justify-between gap-3">
               <Link href="/account" className="btn-ghost flex-1">
                 <UserRound className="size-4" />
-                {auth.status === "loading" ? "checking…" : "Sign in to sync"}
+                {auth.status === "loading" ? t("checking…") : t("Sign in to sync")}
               </Link>
               <ThemeToggle />
             </div>
@@ -249,7 +256,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               )}
             >
               <Icon className="size-5" strokeWidth={active ? 2.2 : 1.8} />
-              {label.split(" ")[0]}
+              {t(label).split(" ")[0]}
             </Link>
           );
         })}

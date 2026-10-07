@@ -6,6 +6,7 @@ import type { EventType, StudyEvent } from "@/lib/types";
 import { useEventsStore } from "@/lib/store/events";
 import type { EventInput } from "@/lib/store/events";
 import { useDebouncedCallback } from "@/lib/hooks";
+import { currentLang, useT } from "@/lib/i18n";
 import Modal from "@/components/ui/Modal";
 import SubjectSelect from "@/components/ui/SubjectSelect";
 
@@ -14,7 +15,7 @@ const TYPES: Array<{ value: EventType; label: string }> = [
   { value: "deadline", label: "Deadline" },
   { value: "exam", label: "Exam" },
   { value: "event", label: "Event" },
-];
+]; // labels translated at render via t()
 
 /** local-time yyyy-MM-dd, used when an untitled-and-undated entry gets saved on close */
 function today() {
@@ -35,6 +36,7 @@ export default function EventFormModal({
   date?: string;
   event?: StudyEvent;
 }) {
+  const t = useT();
   const addEvent = useEventsStore((s) => s.addEvent);
   const updateEvent = useEventsStore((s) => s.updateEvent);
   const removeEvent = useEventsStore((s) => s.removeEvent);
@@ -57,7 +59,7 @@ export default function EventFormModal({
     if (!t && (targetId || !(relaxed && hasExtras))) return;
     if (!day && targetId) return;
     const input: EventInput = {
-      title: t || "Untitled",
+      title: t || (currentLang() === "de" ? "Ohne Titel" : "Untitled"),
       date: day || today(),
       time: time || undefined,
       type,
@@ -100,7 +102,7 @@ export default function EventFormModal({
   };
 
   return (
-    <Modal open={open} onClose={close} title={targetId ? "Edit entry" : "New entry"}>
+    <Modal open={open} onClose={close} title={targetId ? t("Edit entry") : t("New entry")}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -110,13 +112,13 @@ export default function EventFormModal({
       >
         <div>
           <label className="label" htmlFor="event-title">
-            Title
+            {t("Title")}
           </label>
           <input
             id="event-title"
             className="field"
             autoFocus
-            placeholder="e.g. Library session, History midterm…"
+            placeholder={t("e.g. Library session, History midterm…")}
             value={title}
             onChange={(e) => edit(setTitle)(e.target.value)}
           />
@@ -125,7 +127,7 @@ export default function EventFormModal({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="label" htmlFor="event-date">
-              Date
+              {t("Date")}
             </label>
             <input
               id="event-date"
@@ -137,7 +139,7 @@ export default function EventFormModal({
           </div>
           <div>
             <label className="label" htmlFor="event-time">
-              Time (optional)
+              {t("Time (optional)")}
             </label>
             <input
               id="event-time"
@@ -150,25 +152,25 @@ export default function EventFormModal({
         </div>
 
         <div>
-          <span className="label">Type</span>
+          <span className="label">{t("Type")}</span>
           <div className="flex flex-wrap gap-1.5">
-            {TYPES.map((t) => (
+            {TYPES.map((typ) => (
               <button
-                key={t.value}
+                key={typ.value}
                 type="button"
                 onClick={() => {
-                  setType(t.value);
+                  setType(typ.value);
                   dirtyRef.current = true;
                   commit();
                 }}
                 className={
                   "cursor-pointer rounded-lg border px-3 py-2 text-xs font-medium transition-colors " +
-                  (type === t.value
+                  (type === typ.value
                     ? "border-ink bg-ink text-paper"
                     : "border-line bg-card text-ink-soft hover:border-ink/30")
                 }
               >
-                {t.label}
+                {t(typ.label)}
               </button>
             ))}
           </div>
@@ -190,7 +192,7 @@ export default function EventFormModal({
           <textarea
             id="event-notes"
             className="field min-h-16 resize-y"
-            placeholder="Room, materials to bring…"
+            placeholder={t("Room, materials to bring…")}
             value={notes}
             onChange={(e) => edit(setNotes)(e.target.value)}
           />
@@ -206,13 +208,13 @@ export default function EventFormModal({
                 onClose();
               }}
             >
-              <Trash2 className="size-4" /> Delete
+              <Trash2 className="size-4" /> {t("Delete")}
             </button>
           ) : (
-            <span className="text-xs text-ink-soft">Saves automatically</span>
+            <span className="text-xs text-ink-soft">{t("Saves automatically")}</span>
           )}
           <button type="submit" className="btn-primary">
-            Done
+            {t("Done")}
           </button>
         </div>
       </form>

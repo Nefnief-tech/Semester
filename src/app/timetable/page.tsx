@@ -10,6 +10,7 @@ import { useAuthStore } from "@/lib/store/auth";
 import { useHydrated } from "@/lib/hooks";
 import { syncPortalTestTasks } from "@/lib/portalTests";
 import { timetableNow } from "@/lib/schedule";
+import { useT } from "@/lib/i18n";
 import {
   DAY_ORDER,
   EXAMPLE_TIMETABLE,
@@ -56,6 +57,7 @@ export default function TimetablePage() {
   const clear = useTimetableStore((s) => s.clear);
   const subjects = useSubjectsStore((s) => s.subjects);
 
+  const t = useT();
   const portal = usePortalStore();
   const [panelOpen, setPanelOpen] = useState(false);
   const [raw, setRaw] = useState("");
@@ -156,11 +158,11 @@ export default function TimetablePage() {
         const code = json && "error" in json ? json.error : "portal_unreachable";
         portal.setError(
           code === "portal_auth"
-            ? "Portal rejected the login. Check portal URL, email and password."
+            ? t("Portal rejected the login. Check portal URL, email and password.")
             : code === "auth_required"
-              ? "Sign in first (sidebar)."
+              ? t("Sign in first (sidebar).")
               : code === "missing_settings"
-                ? "Fill in portal URL, email and password below."
+                ? t("Fill in portal URL, email and password below.")
                 : (json && "detail" in json ? json.detail : "") ||
                   "The portal could not be reached.",
         );
@@ -176,7 +178,7 @@ export default function TimetablePage() {
       // puts them on the calendar automatically)
       syncPortalTestTasks(json.tests ?? []);
     } catch {
-      portal.setError("Could not reach the portal.");
+      portal.setError(t("The portal could not be reached."));
     } finally {
       setFetching(false);
     }
@@ -189,7 +191,7 @@ export default function TimetablePage() {
     if (p.autoFetch && p.baseUrl && p.username && p.password) {
       void fetchNow();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
   }, [hydrated]);
 
   if (!hydrated) return <PageSkeleton />;
@@ -199,11 +201,11 @@ export default function TimetablePage() {
       <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="flex items-center gap-3 font-display text-4xl font-semibold tracking-tight">
-            Timetable
+            {t("Timetable")}
             <Table2 className="size-5 text-accent" />
           </h1>
           <p className="mt-1 font-mono text-xs tracking-wide text-ink-soft">
-            paste your timetable as JSON, formatted automatically
+            {t("paste your timetable as JSON, formatted automatically")}
           </p>
         </div>
         {entries.length > 0 && (
@@ -215,13 +217,13 @@ export default function TimetablePage() {
                 setPanelOpen(true);
               }}
             >
-              <Upload className="size-4" /> Edit JSON
+              <Upload className="size-4" /> {t("Edit JSON")}
             </button>
             <button
               className="btn-ghost hover:border-marker/40 hover:text-marker"
-              onClick={() => window.confirm("Clear the whole timetable?") && clear()}
+              onClick={() => window.confirm(t("Clear the whole timetable?")) && clear()}
             >
-              <Eraser className="size-4" /> Clear
+              <Eraser className="size-4" /> {t("Clear")}
             </button>
           </div>
         )}
@@ -234,25 +236,25 @@ export default function TimetablePage() {
       >
         <summary className="flex cursor-pointer flex-wrap items-baseline justify-between gap-x-4 gap-y-1 font-display text-base font-semibold tracking-tight [&::-webkit-details-marker]:hidden">
           <span>
-            Substitute plan (Vertretungsplan)
+            {t("Substitute plan (Vertretungsplan)")}
             {portal.lastFetched && !portal.error && (
               <span className="ml-2 font-mono text-[10px] font-normal text-ink-soft">
-                fetched {new Date(portal.lastFetched).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
+                {t("fetched")} {new Date(portal.lastFetched).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
               </span>
             )}
           </span>
           {!portal.error && portal.username && portal.password && (
             <span className="font-mono text-[10px] font-normal tracking-wide text-ink-soft uppercase">
-              connected · {relevantSubs.length} substitution{relevantSubs.length === 1 ? "" : "s"}
+              {t("connected")} · {relevantSubs.length} {relevantSubs.length === 1 ? t("substitution") : t("substitutions")}
               {(portal.data?.tests?.length ?? 0) > 0 &&
-                ` · ${portal.data?.tests.length} upcoming test${(portal.data?.tests.length ?? 0) === 1 ? "" : "s"}`}
+                ` · ${portal.data?.tests.length} ${(portal.data?.tests.length ?? 0) === 1 ? t("upcoming test") : t("upcoming tests")}`}
             </span>
           )}
         </summary>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <label className="label" htmlFor="portal-url">
-              Portal URL
+              {t("Portal URL")}
             </label>
             <input
               id="portal-url"
@@ -266,7 +268,7 @@ export default function TimetablePage() {
           </div>
           <div>
             <label className="label" htmlFor="portal-email">
-              Portal email
+              {t("Portal email")}
             </label>
             <input
               id="portal-email"
@@ -281,7 +283,7 @@ export default function TimetablePage() {
           </div>
           <div>
             <label className="label" htmlFor="portal-password">
-              Portal password
+              {t("Portal password")}
             </label>
             <input
               id="portal-password"
@@ -312,7 +314,7 @@ export default function TimetablePage() {
             onClick={() => void fetchNow()}
           >
             <RefreshCcw className={cn("size-4", fetching && "animate-spin")} />
-            {fetching ? "Fetching…" : "Fetch now"}
+            {fetching ? t("Fetching…") : t("Fetch now")}
           </button>
         </div>
         {portal.error && <p className="mt-3 text-sm text-marker">{portal.error}</p>}
@@ -404,7 +406,7 @@ export default function TimetablePage() {
                       {d}
                       {d === todayCol && (
                         <span className="ml-2 font-mono text-[9px] tracking-[0.14em] uppercase">
-                          today
+                          {t("today")}
                         </span>
                       )}
                     </th>
@@ -516,7 +518,7 @@ export default function TimetablePage() {
       {/* substitutions list — all the info */}
       {relevantSubs.length > 0 && (
         <div className="mt-8">
-          <h2 className="mb-3 font-display text-xl font-semibold tracking-tight">Substitutions</h2>
+          <h2 className="mb-3 font-display text-xl font-semibold tracking-tight">{t("Substitutions")}</h2>
           <div className="space-y-4">
             {portal.data?.days.map((day) => {
               const daySubs = relevantSubs.filter((s) => s.date === day.date);
@@ -568,9 +570,9 @@ export default function TimetablePage() {
           mirrored into the calendar as exam events */}
       {(portal.data?.tests?.length ?? 0) > 0 && (
         <div className="mt-8">
-          <h2 className="mb-1 font-display text-xl font-semibold tracking-tight">Upcoming tests</h2>
+          <h2 className="mb-1 font-display text-xl font-semibold tracking-tight">{t("Upcoming tests")}</h2>
           <p className="mb-3 font-mono text-[10px] tracking-wide text-ink-soft">
-            schulaufgaben from the Eltern-Portal, added to your tasks automatically
+            {t("schulaufgaben from the Eltern-Portal, added to your tasks automatically")}
           </p>
           <div className="space-y-1.5">
             {(portal.data?.tests ?? []).map((t) => {
