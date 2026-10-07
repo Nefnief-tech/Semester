@@ -14,6 +14,7 @@ import type { DocKind, StudyDoc } from "@/lib/types";
 import { useStudyRoomStore } from "@/lib/store/studyroom";
 import { STORAGE_BUCKET_ID, appwriteClient, getAuthHeaders } from "@/lib/auth/appwrite";
 import { useAuthStore } from "@/lib/store/auth";
+import { useT } from "@/lib/i18n";
 import { cn, formatBytes } from "@/lib/utils";
 import { EmptyState, SubjectDot } from "@/components/ui/bits";
 import AuthRequiredNotice from "@/components/study-room/AuthRequiredNotice";
@@ -36,6 +37,7 @@ const ERRORS: Record<string, string> = {
 };
 
 export default function DocumentsPanel({ variant = "page" }: { variant?: "page" | "rail" }) {
+  const t = useT();
   const documents = useStudyRoomStore((s) => s.documents);
   const addDocument = useStudyRoomStore((s) => s.addDocument);
   const removeDocument = useStudyRoomStore((s) => s.removeDocument);
@@ -130,7 +132,7 @@ export default function DocumentsPanel({ variant = "page" }: { variant?: "page" 
             <Upload className="size-4" />
           </span>
           <span className="min-w-0">
-            <span className="block text-sm font-medium">Add material</span>
+            <span className="block text-sm font-medium">{t("Add material")}</span>
             <span className="block font-mono text-[10px] text-ink-soft">
               PDF · PPTX · DOCX · TXT/MD
             </span>
@@ -231,7 +233,7 @@ export default function DocumentsPanel({ variant = "page" }: { variant?: "page" 
           <div className="mb-3 grid size-11 place-items-center rounded-xl bg-accent-soft text-accent">
             <Upload className="size-5" />
           </div>
-          <p className="font-display text-lg font-semibold tracking-tight">Drop your material here</p>
+          <p className="font-display text-lg font-semibold tracking-tight">{t("Drop your material here")}</p>
           <p className="mt-1 text-xs text-ink-soft">
             PDFs, slides (PPTX), DOCX or plain notes (TXT/MD) · up to 20 MB
           </p>
@@ -272,8 +274,8 @@ export default function DocumentsPanel({ variant = "page" }: { variant?: "page" 
         {documents.length === 0 ? (
           <div className="mt-6">
             <EmptyState
-              title="No documents yet"
-              hint="Upload lecture notes, slides or chapters — they become the context for flashcards and chat."
+              title={t("No documents yet")}
+              hint={t("Upload lecture notes, slides or chapters - they become the context for flashcards and chat.")}
             />
           </div>
         ) : (

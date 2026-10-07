@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { addDays, format, isToday, parseISO, startOfDay } from "date-fns";
-import { BookOpen, Check, GraduationCap, MapPin, Plus, Trash2 } from "lucide-react";
+import { BookOpen, Check, Clock, GraduationCap, MapPin, Plus, Trash2 } from "lucide-react";
 import { useTodosStore } from "@/lib/store/todos";
 import { useEventsStore } from "@/lib/store/events";
 import { useSubjectsStore } from "@/lib/store/subjects";
@@ -12,6 +12,8 @@ import { useHomeworkStore } from "@/lib/store/homework";
 import { useTimetableStore } from "@/lib/store/timetable";
 import { useHydrated } from "@/lib/hooks";
 import { minutesToClock, timetableNow } from "@/lib/schedule";
+import { holidayInfo, nextFerien } from "@/lib/holidays";
+import { useSettingsStore } from "@/lib/store/settings";
 import { useDateLocale, useT } from "@/lib/i18n";
 import type { Homework, StudyEvent, Todo } from "@/lib/types";
 import {
@@ -61,16 +63,21 @@ export default function DashboardPage() {
   const openTodos = useMemo(() => todos.filter((t) => !t.done), [todos]);
 
   const [quickTitle, setQuickTitle] = useState("");
+  const [quickTime, setQuickTime] = useState("");
   // the Now/Next card re-reads the clock every 30 s so "ends in" stays honest
   const [clock, setClock] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setClock(new Date()), 30_000);
     return () => clearInterval(id);
   }, []);
+  const bundesland = useSettingsStore((s) => s.bundesland);
   const lessonNow = useMemo(
     () => timetableNow(timetableEntries, clock),
     [timetableEntries, clock],
   );
+  // a Feiertag or Ferien today: no lessons run, the desk says so instead
+  const outToday = useMemo(() => holidayInfo(clock, bundesland), [clock, bundesland]);
+  const ferienAhead = useMemo(() => nextFerien(clock, bundesland), [clock, bundesland]);
 
   const stats = useMemo(() => {
     return {
@@ -236,8 +243,13 @@ export default function DashboardPage() {
   const addQuickTask = () => {
     const title = quickTitle.trim();
     if (!title) return;
-    addTodo({ title, priority: "medium", due: toDayKey(new Date()) });
+    addTodo({
+      title,
+      priority: "medium",
+      due: `${toDayKey(new Date())}${quickTime ? `T${quickTime}` : ""}`,
+    });
     setQuickTitle("");
+    setQuickTime("");
   };
 
   if (!hydrated) return <PageSkeleton />;
@@ -305,7 +317,7 @@ export default function DashboardPage() {
       <header
         className={cn(
           "rise mb-10 grid items-center gap-8",
-          lessonNow.status !== "none" && "lg:grid-cols-[1.2fr_1fr]",
+          (lessonNow.status !== "none" || outToday) && "lg:grid-cols-[1.2fr_1fr]",
         )}
       >
         <div>
@@ -335,7 +347,29 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {lessonNow.status !== "none" && (
+        {outToday ? (
+          // Feiertag / Ferien: the desk knows school is out
+          <div className="card relative overflow-hidden px-6 py-5">
+            <span className="absolute inset-y-0 left-0 w-1.5 bg-amber" aria-hidden />
+            <div className="pl-3">
+              <p className="font-mono text-[10px] tracking-[0.14em] text-amber uppercase">
+                {outToday.kind === "ferien" ? t("School holidays") : t("Public holiday")}
+              </p>
+              <p className="mt-1.5 font-display text-3xl font-semibold tracking-tight">
+                {outToday.name}
+              </p>
+              <p className="mt-1 font-mono text-[11px] text-ink-soft">
+                {outToday.end && (
+                  <>
+                    {t("until")} {format(new Date(`${outToday.end}T12:00:00`), "d. MMMM", { locale: dateLocale })} ·{" "}
+                  </>
+                )}
+                {t("no lessons today")}
+              </p>
+            </div>
+          </div>
+        ) : (
+          lessonNow.status !== "none" && (
           <div className="card relative overflow-hidden px-6 py-5">
             <span className="absolute inset-y-0 left-0 w-1.5 bg-accent" aria-hidden />
             {lessonNow.current ? (
@@ -401,14 +435,26 @@ export default function DashboardPage() {
               <p className="pl-3 text-sm italic text-ink-soft">{t("Lessons are over for today.")}</p>
             )}
           </div>
-        )}
+            )
+          )}
       </header>
 
-      {/* exam countdown strip — the tests you should be thinking about */}
-      {examCountdowns.length > 0 && (
+      {/* exam countdown strip — the tests you should be thinking about;
+          the next Ferien rides along when it is close */}
+      {(examCountdowns.length > 0 || (ferienAhead && ferienAhead.daysUntil <= 30)) && (
         <section className="rise mb-10" style={{ "--d": ".03s" } as React.CSSProperties}>
           <div className="flex flex-wrap items-center gap-2">
             <GraduationCap className="mr-1 size-4 text-accent" />
+            {ferienAhead && ferienAhead.daysUntil <= 30 && (
+              <span className="chip border-amber/40 bg-amber/[0.08] px-3 py-1.5 text-xs">
+                <span className="font-semibold">{ferienAhead.name}</span>
+                <span className="font-mono text-[10px] text-ink-soft">
+                  {ferienAhead.daysUntil === 0
+                    ? t("today")
+                    : t("in {n} days").replace("{n}", String(ferienAhead.daysUntil))}
+                </span>
+              </span>
+            )}
             {examCountdowns.map(({ event, days }) => (
               <Link
                 key={event.id}
@@ -422,7 +468,7 @@ export default function DashboardPage() {
                     ? t("today")
                     : days === 1
                       ? t("tomorrow")
-                      : t("in X days").replace("{n}", String(days))}
+                      : t("in {n} days").replace("{n}", String(days))}
                 </span>
               </Link>
             ))}
@@ -459,8 +505,19 @@ export default function DashboardPage() {
               onKeyDown={(e) => e.key === "Enter" && addQuickTask()}
               placeholder={t("Add a task for today and press Enter")}
               aria-label="Quick-add a task due today"
-              className="w-full bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-soft/60"
+              className="min-w-24 w-full bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-soft/60"
             />
+            <label className="flex shrink-0 cursor-pointer items-center gap-1.5 font-mono text-[11px] text-ink-soft">
+              <Clock className="size-3.5" />
+              <input
+                type="time"
+                value={quickTime}
+                onChange={(e) => setQuickTime(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addQuickTask()}
+                aria-label={t("Time (optional)")}
+                className="cursor-pointer bg-transparent font-mono text-[11px] text-ink outline-none"
+              />
+            </label>
           </div>
 
           {todayFocus.length === 0 ? (

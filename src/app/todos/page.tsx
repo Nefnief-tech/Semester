@@ -1,12 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarDays, Check, Inbox, Pencil, Plus, Trash2 } from "lucide-react";
+import { CalendarDays, Check, Clock, Inbox, Pencil, Plus, Trash2 } from "lucide-react";
 import { useTodosStore } from "@/lib/store/todos";
 import { useSubjectsStore } from "@/lib/store/subjects";
 import { useHydrated } from "@/lib/hooks";
 import type { Todo } from "@/lib/types";
-import { cn, dueInfo, findSubject, PRIORITY_ORDER } from "@/lib/utils";
+import { cn, dueInfo, findSubject, PRIORITY_ORDER, toDayKey } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import PageSkeleton from "@/components/ui/PageSkeleton";
 import { DueChip, EmptyState, PriorityBadge, SubjectTag } from "@/components/ui/bits";
@@ -81,9 +81,10 @@ export default function TodosPage() {
   const [subjectFilter, setSubjectFilter] = useState<string | "all">("all");
   const [modal, setModal] = useState<{ open: boolean; todo?: Todo }>({ open: false });
 
-  // quick add: a title and an optional due date, Enter commits
+  // quick add: a title and an optional due date + time, Enter commits
   const [quickTitle, setQuickTitle] = useState("");
   const [quickDue, setQuickDue] = useState("");
+  const [quickTime, setQuickTime] = useState("");
 
   const filtered = useMemo(() => {
     let list = todos;
@@ -112,13 +113,17 @@ export default function TodosPage() {
   const addQuick = () => {
     const title = quickTitle.trim();
     if (!title) return;
+    // a time without a date lands on today — visible in the overdue chip if
+    // it already passed, one tap on the chip to fix
+    const date = quickDue || (quickTime ? toDayKey(new Date()) : "");
     addTodo({
       title,
       priority: "medium",
-      due: quickDue || undefined,
+      due: date ? `${date}${quickTime ? `T${quickTime}` : ""}` : undefined,
     });
     setQuickTitle("");
     setQuickDue("");
+    setQuickTime("");
   };
 
   if (!hydrated) return <PageSkeleton />;
@@ -223,6 +228,16 @@ export default function TodosPage() {
             className="cursor-pointer bg-transparent font-mono text-[11px] text-ink outline-none"
           />
         </label>
+        <label className="flex cursor-pointer items-center gap-1.5 font-mono text-[11px] text-ink-soft">
+          <Clock className="size-3.5" />
+          <input
+            type="time"
+            value={quickTime}
+            onChange={(e) => setQuickTime(e.target.value)}
+            aria-label={t("Time (optional)")}
+            className="cursor-pointer bg-transparent font-mono text-[11px] text-ink outline-none"
+          />
+        </label>
       </div>
 
       {/* filters */}
@@ -277,7 +292,7 @@ export default function TodosPage() {
           <EmptyState
             icon={<Inbox className="size-8" />}
             title={t("No tasks here")}
-            hint="Add a task with a due date, priority and subject. It will also show up on the calendar."
+            hint={t("Add a task with a due date, priority and subject. It will also show up on the calendar.")}
             action={
               <button className="btn-primary" onClick={() => setModal({ open: true })}>
                 <Plus className="size-4" /> {t("New task")}

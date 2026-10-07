@@ -5,9 +5,11 @@ import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import {
   BookOpen,
+  BookOpenText,
   CalendarDays,
   Calculator,
   LayoutDashboard,
+  Plus,
   Search,
   Sparkles,
   SquareCheckBig,
@@ -32,6 +34,7 @@ const NAV: Array<{ href: Route; label: string; icon: LucideIcon }> = [
   { href: "/grades", label: "Grades", icon: Calculator },
   { href: "/timetable", label: "Timetable", icon: Table2 },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
+  { href: "/read", label: "Reading", icon: BookOpenText },
   { href: "/study-room", label: "Study Room", icon: Sparkles },
 ];
 
@@ -241,6 +244,17 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </main>
+
+      {/* mobile quick-add — opens the ⌘K palette, the one universal creator */}
+      <button
+        onClick={() =>
+          window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))
+        }
+        aria-label={t("Quick menu")}
+        className="fixed bottom-[4.75rem] right-4 z-40 grid size-12 cursor-pointer place-items-center rounded-full bg-accent text-paper shadow-lg shadow-accent/40 transition-transform active:scale-95 md:hidden"
+      >
+        <Plus className="size-6" strokeWidth={2.2} />
+      </button>
 
       {/* mobile bottom nav */}
       <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-line bg-paper/95 backdrop-blur md:hidden">

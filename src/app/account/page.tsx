@@ -2,6 +2,7 @@
 
 import { UserRound } from "lucide-react";
 import AccountPanel from "@/components/auth/AccountPanel";
+import SchoolSettings from "@/components/settings/SchoolSettings";
 
 export default function AccountPage() {
   return (
@@ -17,6 +18,8 @@ export default function AccountPage() {
       <div className="mt-6 rounded-2xl border border-line bg-card px-5 py-5">
         <AccountPanel />
       </div>
+
+      <SchoolSettings />
     </div>
   );
 }

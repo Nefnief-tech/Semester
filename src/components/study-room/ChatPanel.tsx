@@ -7,11 +7,13 @@ import { useStudyRoomStore } from "@/lib/store/studyroom";
 import { cn, summarizeProviderError } from "@/lib/utils";
 import { getAuthHeaders } from "@/lib/auth/appwrite";
 import { useAuthStore } from "@/lib/store/auth";
+import { useT } from "@/lib/i18n";
 import Markdown from "@/components/study-room/Markdown";
 import SetupNotice from "@/components/study-room/SetupNotice";
 import AuthRequiredNotice from "@/components/study-room/AuthRequiredNotice";
 
 export default function ChatPanel({ configured }: { configured: boolean }) {
+  const t = useT();
   const chat = useStudyRoomStore((s) => s.chat);
   const appendMessage = useStudyRoomStore((s) => s.appendMessage);
   const updateLastAssistant = useStudyRoomStore((s) => s.updateLastAssistant);
@@ -123,7 +125,7 @@ export default function ChatPanel({ configured }: { configured: boolean }) {
   // documents fetch, and a hook after a conditional return would crash React
   const signedIn = useAuthStore((s) => s.status) === "signed-in";
   if (!configured) return <SetupNotice kind="chat" />;
-  if (!signedIn) return <AuthRequiredNotice feature="chat about your documents" />;
+  if (!signedIn) return <AuthRequiredNotice feature={t("chat about your documents")} />;
 
   const contextDocs = documents.filter((d) => selectedDocIds.includes(d.id));
   const contextChars = contextDocs.reduce((sum, d) => sum + d.chars, 0);
@@ -133,8 +135,9 @@ export default function ChatPanel({ configured }: { configured: boolean }) {
       {/* context bar */}
       <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-ink-soft">
         <span>
-          context · {contextDocs.length} {contextDocs.length === 1 ? "document" : "documents"}
-          {contextChars > 0 && ` · ${(contextChars / 1000).toFixed(0)}k chars`}
+          {t("context")} · {contextDocs.length}{" "}
+          {contextDocs.length === 1 ? t("document") : t("documents")}
+          {contextChars > 0 && ` · ${(contextChars / 1000).toFixed(0)}k ${t("chars")}`}
         </span>
         {contextDocs.length > 0 && (
           <span className="truncate text-ink-soft/70">({contextDocs.map((d) => d.name).join(", ")})</span>
@@ -154,21 +157,28 @@ export default function ChatPanel({ configured }: { configured: boolean }) {
         {chat.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center text-center">
             <MessageCircle className="mb-3 size-8 text-ink-soft" />
-            <p className="font-display text-lg font-medium">Ask your documents</p>
+            <p className="font-display text-lg font-medium">{t("Ask your documents")}</p>
             <p className="mt-1 max-w-sm text-sm text-ink-soft">
               {contextDocs.length > 0
-                ? `Questions about ${contextDocs[0].name} and ${contextDocs.length - 1 > 0 ? `${contextDocs.length - 1} more selected document${contextDocs.length - 1 === 1 ? "" : "s"}` : "anything else"}. Answers cite their sources.`
-                : "No documents selected, so the assistant will answer from general knowledge. Tick some documents under Material to ground it."}
+                ? contextDocs.length === 1
+                  ? t("Questions about {name}. Answers cite their sources.").replace(
+                      "{name}",
+                      contextDocs[0].name,
+                    )
+                  : t("Questions about {name} and {n} more selected documents. Answers cite their sources.")
+                      .replace("{name}", contextDocs[0].name)
+                      .replace("{n}", String(contextDocs.length - 1))
+                : t("No documents selected, so the assistant will answer from general knowledge. Tick some documents under Material to ground it.")}
             </p>
             <div className="mt-4 flex max-w-sm flex-wrap justify-center gap-1.5">
               {(contextDocs.length > 0
                 ? [
-                    "Summarize the key ideas",
-                    "Quiz me on this material",
-                    "Explain the hardest concept step by step",
-                    "Make a study plan for the exam",
+                    t("Summarize the key ideas"),
+                    t("Quiz me on this material"),
+                    t("Explain the hardest concept step by step"),
+                    t("Make a study plan for the exam"),
                   ]
-                : ["What can the study room do?", "How do flashcard decks work?"]
+                : [t("What can the study room do?"), t("How do flashcard decks work?")]
               ).map((p) => (
                 <button
                   key={p}
@@ -259,7 +269,7 @@ export default function ChatPanel({ configured }: { configured: boolean }) {
       >
         <textarea
           className="field max-h-40 min-h-11 flex-1 resize-none py-3"
-          placeholder="Ask something about your material…"
+          placeholder={t("Ask something about your material…")}
           rows={1}
           value={input}
           onChange={(e) => setInput(e.target.value)}

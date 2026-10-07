@@ -17,6 +17,7 @@ import { useStudyRoomStore } from "@/lib/store/studyroom";
 import { cn, summarizeProviderError } from "@/lib/utils";
 import { getAuthHeaders } from "@/lib/auth/appwrite";
 import { useAuthStore } from "@/lib/store/auth";
+import { useT } from "@/lib/i18n";
 import { EmptyState } from "@/components/ui/bits";
 import SetupNotice from "@/components/study-room/SetupNotice";
 import AuthRequiredNotice from "@/components/study-room/AuthRequiredNotice";
@@ -44,6 +45,7 @@ function deckToCsv(title: string, cards: Flashcard[]) {
 }
 
 export default function FlashcardsPanel({ configured }: { configured: boolean }) {
+  const t = useT();
   const documents = useStudyRoomStore((s) => s.documents);
   const selectedDocIds = useStudyRoomStore((s) => s.selectedDocIds);
   const decks = useStudyRoomStore((s) => s.decks);
@@ -180,18 +182,18 @@ export default function FlashcardsPanel({ configured }: { configured: boolean })
   };
 
   if (!configured) return <SetupNotice kind="flashcards" />;
-  if (!signedIn) return <AuthRequiredNotice feature="generate flashcards" />;
+  if (!signedIn) return <AuthRequiredNotice feature={t("generate flashcards")} />;
 
   if (decks.length === 0) {
     return (
       <div className="space-y-6">
         <EmptyState
           icon={<Layers className="size-8" />}
-          title="No decks yet"
+          title={t("No decks yet")}
           hint={
             selectedDocIds.length > 0
-              ? "Turn your selected documents into a deck of flashcards."
-              : "Upload material first and tick it as AI context, then generate your deck."
+              ? t("Turn your selected documents into a deck of flashcards.")
+              : t("Upload material first and tick it as AI context, then generate your deck.")
           }
           action={
             <button
@@ -234,8 +236,8 @@ export default function FlashcardsPanel({ configured }: { configured: boolean })
         </div>
         <button
           className="btn-icon size-9"
-          aria-label="Export deck as CSV"
-          title="Export as CSV"
+          aria-label={t("Export deck as CSV")}
+          title={t("Export as CSV")}
           onClick={() => deckToCsv(deck!.title, deck!.cards)}
         >
           <Download className="size-4" />
@@ -245,7 +247,7 @@ export default function FlashcardsPanel({ configured }: { configured: boolean })
         </button>
         <button
           className="btn-icon hover:text-marker"
-          aria-label="Delete deck"
+          aria-label={t("Delete deck")}
           onClick={() => removeDeck(deck!.id)}
         >
           <Trash2 className="size-4" />
@@ -328,7 +330,7 @@ export default function FlashcardsPanel({ configured }: { configured: boolean })
           <div className="mt-4 flex items-center justify-between gap-2">
             <button
               className="btn-icon size-9"
-              aria-label="Previous card"
+              aria-label={t("Previous card")}
               disabled={pos === 0}
               onClick={() => {
                 setFlipped(false);
@@ -347,7 +349,7 @@ export default function FlashcardsPanel({ configured }: { configured: boolean })
             <div className="flex gap-1">
               <button
                 className="btn-icon size-9"
-                aria-label="Shuffle"
+                aria-label={t("Shuffle")}
                 onClick={() => {
                   setOrder(shuffled(deck!.cards.length));
                   setPos(0);
@@ -358,7 +360,7 @@ export default function FlashcardsPanel({ configured }: { configured: boolean })
               </button>
               <button
                 className="btn-icon size-9"
-                aria-label="Reset progress"
+                aria-label={t("Reset progress")}
                 onClick={restartDeck}
               >
                 <RotateCcw className="size-4" />
@@ -382,7 +384,7 @@ export default function FlashcardsPanel({ configured }: { configured: boolean })
           </div>
         </>
       ) : (
-        <EmptyState title="Empty deck" hint="This deck has no cards." />
+        <EmptyState title={t("Empty deck")} hint={t("This deck has no cards.")} />
       )}
 
       {error && <p className="mt-4 text-center text-sm text-marker">{error}</p>}

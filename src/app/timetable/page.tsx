@@ -1,16 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Eraser, RefreshCcw, Table2, Upload } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Eraser, Pencil, Plus, RefreshCcw, Table2, Upload, X } from "lucide-react";
 import type { PortalPlan, PortalSub } from "@/lib/server/portal";
 import { useTimetableStore } from "@/lib/store/timetable";
 import { usePortalStore } from "@/lib/store/portal";
 import { useSubjectsStore } from "@/lib/store/subjects";
-import { useAuthStore } from "@/lib/store/auth";
 import { useHydrated } from "@/lib/hooks";
 import { syncPortalTestTasks } from "@/lib/portalTests";
 import { timetableNow } from "@/lib/schedule";
-import { useT } from "@/lib/i18n";
+import { holidayInfo } from "@/lib/holidays";
+import { useSettingsStore } from "@/lib/store/settings";
+import { currentLang, useT } from "@/lib/i18n";
 import {
   DAY_ORDER,
   EXAMPLE_TIMETABLE,
@@ -22,6 +24,7 @@ import { getAuthHeaders } from "@/lib/auth/appwrite";
 import { reconcilePortalSnapshot } from "@/lib/auth/sync";
 import PageSkeleton from "@/components/ui/PageSkeleton";
 import { EmptyState, SubjectDot } from "@/components/ui/bits";
+import LessonEditor, { type LessonSlot } from "@/components/timetable/LessonEditor";
 
 const PORTAL_WEEKDAY: Record<string, string> = {
   mo: "Mon",
@@ -56,6 +59,7 @@ export default function TimetablePage() {
   const setTimetable = useTimetableStore((s) => s.setTimetable);
   const clear = useTimetableStore((s) => s.clear);
   const subjects = useSubjectsStore((s) => s.subjects);
+  const bundesland = useSettingsStore((s) => s.bundesland);
 
   const t = useT();
   const portal = usePortalStore();
@@ -64,6 +68,11 @@ export default function TimetablePage() {
   const [error, setError] = useState("");
   const [warnings, setWarnings] = useState<string[]>([]);
   const [fetching, setFetching] = useState(false);
+  // edit mode: cells become clickable, the editor modal builds the grid.
+  // /timetable?edit=1 (onboarding deep link) lands directly in edit mode.
+  const searchParams = useSearchParams();
+  const [editing, setEditing] = useState(() => searchParams.get("edit") === "1");
+  const [slot, setSlot] = useState<LessonSlot | null>(null);
 
   // the current-lesson highlight follows the clock (30 s is plenty)
   const [clock, setClock] = useState(() => new Date());
@@ -75,8 +84,8 @@ export default function TimetablePage() {
     () => timetableNow(entries, clock),
     [entries, clock],
   );
-
-  const signedIn = useAuthStore((s) => s.status) === "signed-in";
+  /** a Feiertag or Ferien today means no lessons — the grid says so instead */
+  const outToday = useMemo(() => holidayInfo(clock, bundesland), [clock, bundesland]);
 
   const subjectColors = useMemo(() => {
     const map = new Map<string, string>();
@@ -84,15 +93,19 @@ export default function TimetablePage() {
     return map;
   }, [subjects]);
 
-  const days = useMemo(
-    () => DAY_ORDER.filter((d) => entries.some((e) => e.day === d)),
-    [entries],
-  );
+  const days = useMemo(() => {
+    if (!editing) return DAY_ORDER.filter((d) => entries.some((e) => e.day === d));
+    // edit mode always offers Mon–Fri; Sat/Sun only when lessons exist there
+    const base = DAY_ORDER.slice(0, 5);
+    for (const d of ["Sat", "Sun"]) if (entries.some((e) => e.day === d)) base.push(d);
+    return base;
+  }, [editing, entries]);
   const periods = useMemo(() => {
     const set = new Set<number>();
     for (const e of entries) set.add(e.period);
+    if (editing && set.size === 0) set.add(1);
     return [...set].sort((a, b) => a - b);
-  }, [entries]);
+  }, [editing, entries]);
 
   const periodTime = useMemo(() => {
     const map = new Map<number, string>();
@@ -189,9 +202,10 @@ export default function TimetablePage() {
     if (!hydrated) return;
     const p = usePortalStore.getState();
     if (p.autoFetch && p.baseUrl && p.username && p.password) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- pre-existing portal flow
       void fetchNow();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
 
   if (!hydrated) return <PageSkeleton />;
@@ -205,11 +219,25 @@ export default function TimetablePage() {
             <Table2 className="size-5 text-accent" />
           </h1>
           <p className="mt-1 font-mono text-xs tracking-wide text-ink-soft">
-            {t("paste your timetable as JSON, formatted automatically")}
+            {entries.length === 0
+              ? t("build your grid cell by cell, or paste it as JSON")
+              : editing
+                ? t("click a cell to edit it · new cell? just tap the empty slot")
+                : t("your weekly grid, overlaid with live substitutions")}
           </p>
         </div>
-        {entries.length > 0 && (
-          <div className="flex gap-2">
+        <div className="flex gap-2">
+          <button
+            className={cn("btn-ghost", editing && "border-accent text-accent")}
+            onClick={() => {
+              setEditing((v) => !v);
+              setPanelOpen(false);
+            }}
+          >
+            {editing ? <X className="size-4" /> : <Pencil className="size-4" />}
+            {editing ? t("Done") : t("Edit timetable")}
+          </button>
+          {entries.length > 0 && !editing && (
             <button
               className="btn-ghost"
               onClick={() => {
@@ -219,15 +247,42 @@ export default function TimetablePage() {
             >
               <Upload className="size-4" /> {t("Edit JSON")}
             </button>
+          )}
+          {entries.length > 0 && (
             <button
               className="btn-ghost hover:border-marker/40 hover:text-marker"
               onClick={() => window.confirm(t("Clear the whole timetable?")) && clear()}
             >
               <Eraser className="size-4" /> {t("Clear")}
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </header>
+
+      {/* a Feiertag or Ferien today — say so instead of pretending lessons run */}
+      {outToday && !editing && (
+        <div className="card mb-6 flex flex-wrap items-center gap-x-3 gap-y-1 border-amber/40 bg-amber/[0.07] px-5 py-3.5">
+          <span className="chip border-amber/40 bg-amber/10 font-mono text-amber">
+            {outToday.kind === "ferien" ? t("School holidays") : t("Public holiday")}
+          </span>
+          <span className="text-sm">
+            <span className="font-medium">{outToday.name}</span>
+            {outToday.end && (
+              <span className="text-ink-soft">
+                {" "}
+                · {t("until")}{" "}
+                {new Date(`${outToday.end}T12:00:00`).toLocaleDateString(
+                  currentLang() === "de" ? "de-DE" : "en-GB",
+                  { day: "numeric", month: "numeric" },
+                )}
+              </span>
+            )}
+          </span>
+          <span className="ml-auto font-mono text-[10px] tracking-wide text-ink-soft uppercase">
+            {t("no lessons today")}
+          </span>
+        </div>
+      )}
 
       {/* substitute plan portal — collapsed to a status row once connected */}
       <details
@@ -324,8 +379,8 @@ export default function TimetablePage() {
         </p>
       </details>
 
-      {/* import panel */}
-      {(panelOpen || entries.length === 0) && (
+      {/* import panel — the advanced path next to the visual editor */}
+      {(panelOpen || (entries.length === 0 && !editing)) && (
         <div className="card mb-8 p-5">
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 className="font-display text-lg font-semibold tracking-tight">
@@ -369,7 +424,7 @@ export default function TimetablePage() {
       )}
 
       {/* formatted grid */}
-      {entries.length > 0 ? (
+      {entries.length > 0 || editing ? (
         <>
           {/* legend */}
           {(relevantSubs.length > 0 || portal.error) && (
@@ -403,7 +458,7 @@ export default function TimetablePage() {
                         d === todayCol && "bg-accent-soft text-accent",
                       )}
                     >
-                      {d}
+                      {t(d)}
                       {d === todayCol && (
                         <span className="ml-2 font-mono text-[9px] tracking-[0.14em] uppercase">
                           {t("today")}
@@ -434,21 +489,52 @@ export default function TimetablePage() {
                       const cellSubs = cellSubsFor(d, p);
                       const cancelled = cellSubs.some((s) => s.cancelled);
                       const substituted = cellSubs.some((s) => !s.cancelled);
+                      // a Feiertag/Ferien runs the clock but has no lessons
                       const isNow =
-                        d === todayCol && lessonNow.current?.entry.period === p;
+                        d === todayCol &&
+                        lessonNow.current?.entry.period === p &&
+                        !outToday;
+                      const openCell = () =>
+                        setSlot({ day: d, period: p, entry: items[0], periodTime: periodTime.get(p) });
+                      const clickable = editing && cellSubs.length === 0;
                       return (
                         <td
                           key={d}
+                          onClick={clickable ? openCell : undefined}
+                          onKeyDown={
+                            clickable
+                              ? (e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    openCell();
+                                  }
+                                }
+                              : undefined
+                          }
+                          role={clickable ? "button" : undefined}
+                          tabIndex={clickable ? 0 : undefined}
+                          aria-label={clickable ? `${t(d)} · ${p}. ${t("Period")}` : undefined}
                           className={cn(
                             "border-b border-line px-2 py-2 align-top transition-colors",
                             d === todayCol && !isNow && "bg-accent/[0.06]",
                             isNow && "bg-accent/[0.1] ring-1 ring-inset ring-accent/40",
                             cancelled && items.length > 0 && "bg-marker/[0.08]",
                             substituted && !cancelled && items.length > 0 && "bg-amber/[0.07]",
+                            clickable && "cursor-pointer hover:bg-accent/[0.08] focus-visible:bg-accent/[0.08] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent",
                           )}
                         >
                           {items.length === 0 && cellSubs.length === 0 ? (
-                            <span className="text-ink-soft/40">—</span>
+                            <span
+                              className={cn(
+                                "grid place-items-center",
+                                editing
+                                  ? "min-h-9 rounded-md border border-dashed border-line text-ink-soft/50"
+                                  : "text-ink-soft/40",
+                              )}
+                              aria-hidden
+                            >
+                              {editing ? <Plus className="size-4" /> : "—"}
+                            </span>
                           ) : (
                             <div className="space-y-1.5">
                               {items.map((e, i) => (
@@ -496,24 +582,68 @@ export default function TimetablePage() {
                     })}
                   </tr>
                 ))}
+                {editing && (
+                  <tr>
+                    <td className="sticky left-0 z-10 border-b border-r border-line bg-card px-2 py-2" />
+                    <td colSpan={days.length} className="border-b border-line px-3 py-2.5">
+                      <button
+                        className="btn-ghost px-3 py-1.5 text-xs"
+                        onClick={() =>
+                          setSlot({ day: days[0], period: (periods[periods.length - 1] ?? 0) + 1 })
+                        }
+                      >
+                        <Plus className="size-3.5" /> {t("Add period")}
+                      </button>
+                    </td>
+                  </tr>
+                )}
               </tbody>
-            </table>
-          </div>
-        </>
-      ) : (
-        !panelOpen && (
-          <EmptyState
-            icon={<Table2 className="size-8" />}
-            title="No timetable yet"
-            hint="Paste your school's timetable as JSON and it becomes a clean weekly grid. The example shows the exact format."
-            action={
-              <button className="btn-primary" onClick={() => setPanelOpen(true)}>
-                <Upload className="size-4" /> Paste JSON
-              </button>
-            }
-          />
-        )
-      )}
+                </table>
+              </div>
+              {editing && !days.includes("Sat") && (
+                <button
+                  className="btn-ghost mt-3 px-3 py-1.5 text-xs"
+                  onClick={() => setSlot({ day: "Sat", period: periods[0] ?? 1 })}
+                >
+                  <Plus className="size-3.5" /> {t("Add Saturday")}
+                </button>
+              )}
+              {editing && (
+                <p className="mt-3 flex items-center gap-1.5 font-mono text-[10px] text-ink-soft">
+                  <Pencil className="size-3" />
+                  {t("Tap a cell to place a subject · the time applies to the whole period row")}
+                </p>
+              )}
+            </>
+          ) : (
+            !panelOpen &&
+            !editing && (
+              <EmptyState
+                icon={<Table2 className="size-8" />}
+                title="No timetable yet"
+                hint="Build your grid cell by cell — tap a slot and type the subject. Or paste your school's timetable as JSON; the example shows the exact format."
+                action={
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <button className="btn-primary" onClick={() => setEditing(true)}>
+                      <Pencil className="size-4" /> {t("Build in the editor")}
+                    </button>
+                    <button className="btn-ghost" onClick={() => setPanelOpen(true)}>
+                      <Upload className="size-4" /> {t("Paste JSON")}
+                    </button>
+                  </div>
+                }
+              />
+            )
+          )}
+
+          {/* the editor modal, mounted per slot so its fields initialize fresh */}
+          {slot && (
+            <LessonEditor
+              key={`${slot.day}-${slot.period}-${slot.entry ? "e" : "n"}`}
+              slot={slot}
+              onClose={() => setSlot(null)}
+            />
+          )}
 
       {/* substitutions list — all the info */}
       {relevantSubs.length > 0 && (

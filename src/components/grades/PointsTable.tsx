@@ -1,11 +1,16 @@
+"use client";
+
 import { POINTS_TABLE } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 /** the full Oberstufe translation: Punkte ↔ classic +/− grades */
 export default function PointsTable() {
+  const t = useT();
   return (
     <details className="card mb-8 px-5 py-4">
       <summary className="cursor-pointer font-display text-base font-semibold tracking-tight">
-        Punkte → Noten <span className="font-normal text-ink-soft">(0–15 translated to 6–1 with +/−)</span>
+        {t("Punkte → Noten")}{" "}
+        <span className="font-normal text-ink-soft">({t("0-15 translated to 6-1 with +/-")})</span>
       </summary>
       <div className="mt-4 grid grid-cols-4 gap-1.5 sm:grid-cols-8">
         {POINTS_TABLE.map(({ points, grade, note }) => (
@@ -20,8 +25,7 @@ export default function PointsTable() {
         ))}
       </div>
       <p className="mt-3 font-mono text-[10px] leading-relaxed text-ink-soft">
-        every whole grade spans 3 points: 3 · 2 · 1 = 5+ · 5 · 5− — 4 points (4−) still passes, 3
-        points (5+) does not.
+        {t("every whole grade spans 3 points: 3 · 2 · 1 = 5+ · 5 · 5-, 4 points (4-) still passes, 3 points (5+) does not.")}
       </p>
     </details>
   );

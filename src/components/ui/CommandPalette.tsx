@@ -17,15 +17,19 @@ import {
 import type { Route } from "next";
 import { cn, toDayKey } from "@/lib/utils";
 import { useTodosStore } from "@/lib/store/todos";
-import { currentLang, useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n";
 import { useHomeworkStore } from "@/lib/store/homework";
 import { useEventsStore } from "@/lib/store/events";
+import { useSubjectsStore } from "@/lib/store/subjects";
+import { parseQuickEntry } from "@/lib/quickCapture";
 import { syncNow } from "@/lib/auth/sync";
 
 /**
- * ⌘K / Ctrl+K command palette: jump to any page, quick-create a task or
- * homework from whatever you typed, toggle the theme, force a sync. The
- * overlay body is a separate mount, so its input state is fresh on open.
+ * ⌘K / Ctrl+K command palette — the universal quick-add: jump to any page,
+ * or type one line ("Mathe Blatt 14 bis Fr") and it becomes a task, homework
+ * or exam with subject and due date parsed out of the text. Also toggles the
+ * theme and forces a sync. The overlay body is a separate mount, so its
+ * input state is fresh on open.
  */
 
 interface Command {
@@ -43,6 +47,7 @@ const PAGES_SRC: Array<{ href: Route; label: string }> = [
   { href: "/grades", label: "Grades" },
   { href: "/timetable", label: "Timetable" },
   { href: "/calendar", label: "Calendar" },
+  { href: "/read", label: "Reading" },
   { href: "/study-room", label: "Study Room" },
   { href: "/account", label: "Account" },
 ];
@@ -52,6 +57,7 @@ const PageIcon = ArrowRight;
 function PaletteOverlay({ onClose }: { onClose: () => void }) {
   const router = useRouter();
   const t = useT();
+  const subjects = useSubjectsStore((s) => s.subjects);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(0);
   // the overlay remounts on open, so this is the live theme at open time
@@ -63,6 +69,10 @@ function PaletteOverlay({ onClose }: { onClose: () => void }) {
 
   const commands = useMemo<Command[]>(() => {
     const q = query.trim().toLowerCase();
+    // one line in, structured entry out: subject + due date parsed from the text
+    const parsed = q.length > 0 ? parseQuickEntry(query, subjects) : null;
+    const parsedHint =
+      parsed && parsed.match.length > 0 ? parsed.match.join(" · ") : undefined;
     const pageCmds: Command[] = PAGES_SRC.filter((p) => !q || t(p.label).toLowerCase().includes(q)).map(
       (p) => ({
         id: `page-${p.href}`,
@@ -80,39 +90,48 @@ function PaletteOverlay({ onClose }: { onClose: () => void }) {
         ? [
             {
               id: "create-task",
-              label: `${t("New task:")} "${query.trim()}"`,
-              hint: "Enter",
+              label: `${t("New task:")} "${parsed?.title || query.trim()}"`,
+              hint: parsedHint ?? "Enter",
               icon: Plus,
               run: () => {
-                useTodosStore.getState().addTodo({ title: query.trim(), priority: "medium" });
+                useTodosStore.getState().addTodo({
+                  title: parsed?.title || query.trim(),
+                  priority: "medium",
+                  due: parsed?.due,
+                  subjectId: parsed?.subjectId,
+                });
                 router.push("/todos");
                 onClose();
               },
             },
             {
               id: "create-homework",
-              label: `${t("New homework:")} "${query.trim()}"`,
-              hint: "Enter",
+              label: `${t("New homework:")} "${parsed?.title || query.trim()}"`,
+              hint: parsedHint ?? "Enter",
               icon: BookOpen,
               run: () => {
-                useHomeworkStore
-                  .getState()
-                  .addHomework({ title: query.trim(), priority: "medium" });
+                useHomeworkStore.getState().addHomework({
+                  title: parsed?.title || query.trim(),
+                  priority: "medium",
+                  due: parsed?.due,
+                  subjectId: parsed?.subjectId,
+                });
                 router.push("/homework");
                 onClose();
               },
             },
             {
               id: "create-exam",
-              label: `${t("New exam (SA):")} "${query.trim()}"`,
-              hint: t("today"),
+              label: `${t("New exam (SA):")} "${parsed?.title || query.trim()}"`,
+              hint: parsed?.match[0] ?? t("today"),
               icon: GraduationCap,
               run: () => {
-                // quick capture: dated today, refine on the calendar
+                // quick capture: dated from the text (else today), refine on the calendar
                 useEventsStore.getState().addEvent({
-                  title: query.trim(),
-                  date: toDayKey(new Date()),
+                  title: parsed?.title || query.trim(),
+                  date: parsed?.due?.slice(0, 10) ?? toDayKey(new Date()),
                   type: "exam",
+                  subjectId: parsed?.subjectId,
                 });
                 router.push("/calendar");
                 onClose();
@@ -150,7 +169,7 @@ function PaletteOverlay({ onClose }: { onClose: () => void }) {
     const matches = (c: { label: string; hint?: string }) =>
       !q || c.label.toLowerCase().includes(q) || c.hint?.includes(q);
     return [...pageCmds.filter(matches), ...createCmds, ...actions.filter(matches)];
-  }, [query, router, onClose, dark, t]);
+  }, [query, router, onClose, dark, t, subjects]);
 
   // clamped in render — no effect needed to keep the selection in range
   const sel = Math.min(selected, Math.max(0, commands.length - 1));

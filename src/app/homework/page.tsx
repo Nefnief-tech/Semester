@@ -1,12 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BookOpen, Check, Pencil, Plus, Trash2 } from "lucide-react";
+import { BookOpen, CalendarDays, Check, Clock, Pencil, Plus, Trash2 } from "lucide-react";
 import type { Homework } from "@/lib/types";
 import { useHomeworkStore } from "@/lib/store/homework";
 import { useSubjectsStore } from "@/lib/store/subjects";
 import { useHydrated } from "@/lib/hooks";
-import { cn, dueInfo, findSubject, PRIORITY_ORDER } from "@/lib/utils";
+import { cn, dueInfo, findSubject, PRIORITY_ORDER, toDayKey } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import PageSkeleton from "@/components/ui/PageSkeleton";
 import { DueChip, EmptyState, PriorityBadge, SubjectTag } from "@/components/ui/bits";
@@ -18,6 +18,7 @@ export default function HomeworkPage() {
   const hydrated = useHydrated();
   const t = useT();
   const homeworks = useHomeworkStore((s) => s.homeworks);
+  const addHomework = useHomeworkStore((s) => s.addHomework);
   const subjects = useSubjectsStore((s) => s.subjects);
   const toggleHomework = useHomeworkStore((s) => s.toggleHomework);
   const removeHomework = useHomeworkStore((s) => s.removeHomework);
@@ -25,6 +26,25 @@ export default function HomeworkPage() {
   const [status, setStatus] = useState<StatusFilter>("open");
   const [subjectFilter, setSubjectFilter] = useState<string | "all">("all");
   const [modal, setModal] = useState<{ open: boolean; homework?: Homework }>({ open: false });
+
+  // quick add: title, optional due date + time — Enter commits
+  const [quickTitle, setQuickTitle] = useState("");
+  const [quickDue, setQuickDue] = useState("");
+  const [quickTime, setQuickTime] = useState("");
+
+  const addQuick = () => {
+    const title = quickTitle.trim();
+    if (!title) return;
+    const date = quickDue || (quickTime ? toDayKey(new Date()) : "");
+    addHomework({
+      title,
+      priority: "medium",
+      due: date ? `${date}${quickTime ? `T${quickTime}` : ""}` : undefined,
+    });
+    setQuickTitle("");
+    setQuickDue("");
+    setQuickTime("");
+  };
 
   const visible = useMemo(() => {
     let list = homeworks;
@@ -55,6 +75,44 @@ export default function HomeworkPage() {
           <Plus className="size-4" /> {t("New homework")}
         </button>
       </header>
+
+      {/* quick add — title, optional due date + time, Enter */}
+      <div className="rise card mb-6 flex flex-wrap items-center gap-2 px-4 py-2.5">
+        <span
+          className="grid size-5 shrink-0 place-items-center rounded-full border border-dashed border-ink/30 text-ink-soft"
+          aria-hidden
+        >
+          +
+        </span>
+        <input
+          value={quickTitle}
+          onChange={(e) => setQuickTitle(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && addQuick()}
+          placeholder={t("Add homework and press Enter")}
+          aria-label={t("Add homework and press Enter")}
+          className="min-w-40 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-ink-soft/60"
+        />
+        <label className="flex cursor-pointer items-center gap-1.5 font-mono text-[11px] text-ink-soft">
+          <CalendarDays className="size-3.5" />
+          <input
+            type="date"
+            value={quickDue}
+            onChange={(e) => setQuickDue(e.target.value)}
+            aria-label={t("Due date")}
+            className="cursor-pointer bg-transparent font-mono text-[11px] text-ink outline-none"
+          />
+        </label>
+        <label className="flex cursor-pointer items-center gap-1.5 font-mono text-[11px] text-ink-soft">
+          <Clock className="size-3.5" />
+          <input
+            type="time"
+            value={quickTime}
+            onChange={(e) => setQuickTime(e.target.value)}
+            aria-label={t("Time (optional)")}
+            className="cursor-pointer bg-transparent font-mono text-[11px] text-ink outline-none"
+          />
+        </label>
+      </div>
 
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <div className="flex rounded-lg border border-line bg-card p-0.5">

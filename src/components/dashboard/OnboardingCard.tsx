@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Check, PartyPopper, Table2, Upload, UserRound, X } from "lucide-react";
+import { Check, PartyPopper, Pencil, UserRound, X } from "lucide-react";
 import { useSubjectsStore } from "@/lib/store/subjects";
 import { useTimetableStore } from "@/lib/store/timetable";
 import { usePortalStore } from "@/lib/store/portal";
@@ -11,14 +11,14 @@ import { useHydrated } from "@/lib/hooks";
 import { getAuthHeaders } from "@/lib/auth/appwrite";
 import { reconcilePortalSnapshot } from "@/lib/auth/sync";
 import { syncPortalTestTasks } from "@/lib/portalTests";
-import { EXAMPLE_TIMETABLE, parseTimetable } from "@/lib/timetable";
 import type { PortalPlan } from "@/lib/server/portal";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
 /**
  * Setup wizard for a brand-new desk: three steps, each done the moment its
- * data exists. Shows only while the desk is empty; "Skip for now" persists.
+ * data exists. Step 1 opens the visual timetable editor (?edit=1 deep link).
+ * Shows only while the desk is empty; "Skip for now" persists.
  */
 
 const DISMISS_KEY = "semester.onboarding.dismissed";
@@ -29,7 +29,6 @@ export default function OnboardingCard() {
   const subjects = useSubjectsStore((s) => s.subjects);
   const addSubject = useSubjectsStore((s) => s.addSubject);
   const entries = useTimetableStore((s) => s.entries);
-  const setTimetable = useTimetableStore((s) => s.setTimetable);
   const portal = usePortalStore();
   const auth = useAuthStore();
 
@@ -43,8 +42,6 @@ export default function OnboardingCard() {
     }
   });
 
-  const [timetableRaw, setTimetableRaw] = useState("");
-  const [timetableMsg, setTimetableMsg] = useState("");
   const [subjectName, setSubjectName] = useState("");
   const [portalFetching, setPortalFetching] = useState(false);
   const [portalMsg, setPortalMsg] = useState("");
@@ -64,16 +61,6 @@ export default function OnboardingCard() {
   );
 
   if (!hydrated || dismissed) return null;
-
-  const formatTimetable = () => {
-    try {
-      const { entries: parsed } = parseTimetable(timetableRaw);
-      setTimetable(parsed);
-      setTimetableMsg("");
-    } catch (e) {
-      setTimetableMsg((e as Error).message);
-    }
-  };
 
   const addSubjectsFromInput = () => {
     // comma or newline separated — "Mathe, Englisch, Physik" in one go
@@ -163,7 +150,7 @@ export default function OnboardingCard() {
       </div>
 
       <ol className="mt-5 space-y-5">
-        {/* step 1 · timetable */}
+        {/* step 1 · timetable — built visually in the editor */}
         <li className="flex gap-4">
           {stepBadge(done.timetable, 1)}
           <div className="min-w-0 flex-1">
@@ -174,32 +161,19 @@ export default function OnboardingCard() {
             {!done.timetable && (
               <>
                 <p className="mt-0.5 text-xs text-ink-soft">
-                  {t("Paste the JSON below or")}{" "}
-                  <Link href="/timetable" className="underline decoration-line hover:text-ink">
-                    {t("do it on the timetable page")}
-                  </Link>
-                  .
+                  {t("Build your weekly grid in the editor - tap a cell, type the subject.")}
                 </p>
-                <textarea
-                  value={timetableRaw}
-                  onChange={(e) => setTimetableRaw(e.target.value)}
-                  placeholder='[{ "day": "mon", "period": 1, "subject": "Mathematics" }, …]'
-                  rows={3}
-                  spellCheck={false}
-                  className="field mt-2 resize-y font-mono text-xs"
-                />
                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <button className="btn-primary px-4 py-1.5 text-xs" onClick={formatTimetable}>
-                    <Upload className="size-3.5" /> {t("Format timetable")}
-                  </button>
-                  <button
-                    className="btn-ghost px-3 py-1.5 text-xs"
-                    onClick={() => setTimetableRaw(EXAMPLE_TIMETABLE)}
+                  <Link className="btn-primary px-4 py-1.5 text-xs" href="/timetable?edit=1">
+                    <Pencil className="size-3.5" /> {t("Build in the editor")}
+                  </Link>
+                  <Link
+                    href="/timetable"
+                    className="font-mono text-[10px] text-ink-soft underline decoration-line transition-colors hover:text-ink"
                   >
-                    <Table2 className="size-3.5" /> {t("Use example")}
-                  </button>
+                    {t("or paste JSON on the timetable page")}
+                  </Link>
                 </div>
-                {timetableMsg && <p className="mt-2 text-xs text-marker">{timetableMsg}</p>}
               </>
             )}
           </div>
@@ -231,7 +205,7 @@ export default function OnboardingCard() {
                   aria-label="Subject names, comma separated"
                 />
                 <button className="btn-ghost px-3 py-1.5 text-xs" onClick={addSubjectsFromInput}>
-                  Add
+                  {t("Add")}
                 </button>
               </div>
             )}
@@ -252,8 +226,7 @@ export default function OnboardingCard() {
               )}
             </p>
             <p className="mt-0.5 text-xs text-ink-soft">
-              Optional: substitutions and upcoming tests flow in automatically. Credentials stay on
-              this device.
+              {t("Optional: substitutions and upcoming tests flow in automatically. Credentials stay on this device.")}
             </p>
             {!done.portal && (
               <div className="mt-2 grid gap-2 sm:grid-cols-3">

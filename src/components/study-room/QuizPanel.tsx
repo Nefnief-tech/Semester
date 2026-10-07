@@ -5,6 +5,7 @@ import { ArrowRight, Check, CircleHelp, ListChecks, RotateCcw, X } from "lucide-
 import { cn, summarizeProviderError } from "@/lib/utils";
 import { getAuthHeaders } from "@/lib/auth/appwrite";
 import { useAuthStore } from "@/lib/store/auth";
+import { useT } from "@/lib/i18n";
 import { useStudyRoomStore } from "@/lib/store/studyroom";
 import { EmptyState } from "@/components/ui/bits";
 import SetupNotice from "@/components/study-room/SetupNotice";
@@ -23,6 +24,7 @@ interface QuizQuestion {
  * a review. Sessions are intentionally local — a quiz is practice, not data.
  */
 export default function QuizPanel({ configured }: { configured: boolean }) {
+  const t = useT();
   const documents = useStudyRoomStore((s) => s.documents);
   const selectedDocIds = useStudyRoomStore((s) => s.selectedDocIds);
 
@@ -81,18 +83,18 @@ export default function QuizPanel({ configured }: { configured: boolean }) {
   };
 
   if (!configured) return <SetupNotice kind="chat" />;
-  if (!signedIn) return <AuthRequiredNotice feature="take quizzes" />;
+  if (!signedIn) return <AuthRequiredNotice feature={t("take quizzes")} />;
 
   if (questions === null) {
     return (
       <div className="space-y-6">
         <EmptyState
           icon={<ListChecks className="size-8" />}
-          title="No quiz yet"
+          title={t("No quiz yet")}
           hint={
             selectedDocIds.length > 0
-              ? "Turn your ticked documents into a multiple-choice quiz and test yourself."
-              : "Upload material first and tick it as AI context, then generate a quiz."
+              ? t("Turn your ticked documents into a multiple-choice quiz and test yourself.")
+              : t("Upload material first and tick it as AI context, then generate a quiz.")
           }
           action={
             <button

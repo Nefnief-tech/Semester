@@ -112,7 +112,7 @@ export default function StudyRoomPage() {
       <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="flex items-center gap-3 font-display text-4xl font-semibold tracking-tight">
-            Study Room
+            {t("Study Room")}
             <Sparkles className="size-5 text-accent" />
           </h1>
           <p className="mt-1 font-mono text-xs tracking-wide text-ink-soft">
@@ -140,7 +140,7 @@ export default function StudyRoomPage() {
             </h2>
             {documents.length > 0 && (
               <span className="font-mono text-[10px] tracking-wide text-ink-soft uppercase">
-                {selectedDocIds.length}/{documents.length} context
+                {selectedDocIds.length}/{documents.length} {t("context")}
               </span>
             )}
           </div>
@@ -206,7 +206,7 @@ export default function StudyRoomPage() {
         {tab === "chat" && <ChatPanel configured={configured} />}
       </div>
 
-      <Modal open={aiLockedOpen} onClose={() => setAiLockedOpen(false)} title="AI access">
+      <Modal open={aiLockedOpen} onClose={() => setAiLockedOpen(false)} title={t("AI access")}>
         <div className="space-y-3">
           <div className="flex items-start gap-3">
             <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent">
@@ -225,7 +225,7 @@ export default function StudyRoomPage() {
             className="btn-ghost w-full cursor-pointer"
             onClick={() => setAiLockedOpen(false)}
           >
-            Got it
+            {t("Got it")}
           </button>
         </div>
       </Modal>

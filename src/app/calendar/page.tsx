@@ -5,6 +5,8 @@ import { addDays, addMonths, format, isSameMonth, isToday, startOfMonth, startOf
 import { BookOpen, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import type { StudyEvent } from "@/lib/types";
 import { useTodosStore } from "@/lib/store/todos";
+import { holidayInfo } from "@/lib/holidays";
+import { useSettingsStore } from "@/lib/store/settings";
 import { cn, toDayKey } from "@/lib/utils";
 import PageSkeleton from "@/components/ui/PageSkeleton";
 import { useHydrated } from "@/lib/hooks";
@@ -22,6 +24,7 @@ export default function CalendarPage() {
   const t = useT();
   const dateLocale = useDateLocale();
   const toggleTodo = useTodosStore((s) => s.toggleTodo);
+  const bundesland = useSettingsStore((s) => s.bundesland);
   const [view, setView] = useState<View>("month");
   const [cursor, setCursor] = useState(() => new Date());
   const [modal, setModal] = useState<{ open: boolean; date?: string; event?: StudyEvent }>({
@@ -110,6 +113,11 @@ export default function CalendarPage() {
         <span className="inline-flex items-center gap-1.5">
           <span className="size-2 rounded-full bg-ink/40" /> {t("due tasks")}
         </span>
+        {bundesland && (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-2 rounded-full bg-amber" /> {t("Ferien & Feiertage")}
+          </span>
+        )}
       </div>
 
       {view === "month" ? (
@@ -132,6 +140,7 @@ export default function CalendarPage() {
               const items = itemsFor(day);
               const shown = items.slice(0, 2);
               const hidden = items.length - shown.length;
+              const holiday = bundesland ? holidayInfo(day, bundesland) : null;
               return (
                 <div
                   key={day.toISOString()}
@@ -148,9 +157,11 @@ export default function CalendarPage() {
                     "min-h-20 cursor-pointer border-b border-r border-line/70 p-1.5 transition-colors hover:bg-accent/[0.04] focus-visible:bg-accent/[0.06] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent md:min-h-28 [&:nth-child(7n)]:border-r-0",
                     !inMonth && "bg-paper-deep/50 text-ink-soft",
                     isToday(day) && "bg-accent/[0.05]",
+                    holiday?.kind === "ferien" && inMonth && "bg-amber/[0.05]",
+                    holiday?.kind === "feiertag" && inMonth && "bg-marker/[0.05]",
                   )}
                 >
-                  <div className="mb-1 flex items-center justify-between px-0.5">
+                  <div className="mb-1 flex items-center justify-between gap-1 px-0.5">
                     <span
                       className={cn(
                         "font-mono text-[11px]",
@@ -173,6 +184,17 @@ export default function CalendarPage() {
                       </button>
                     )}
                   </div>
+                  {holiday && inMonth && (
+                    <p
+                      title={holiday.name}
+                      className={cn(
+                        "mb-1 hidden truncate px-0.5 font-mono text-[9px] leading-tight sm:block",
+                        holiday.kind === "ferien" ? "text-amber" : "text-marker/90",
+                      )}
+                    >
+                      {holiday.name}
+                    </p>
+                  )}
                   <div className="space-y-1">
                     {/* sm+: readable chips, max two */}
                     <div className="hidden space-y-1 sm:block">
@@ -218,6 +240,7 @@ export default function CalendarPage() {
           {weekDays.map((day) => {
             const key = toDayKey(day);
             const items = itemsFor(day);
+            const holiday = bundesland ? holidayInfo(day, bundesland) : null;
             return (
               <div
                 key={day.toISOString()}
@@ -233,6 +256,8 @@ export default function CalendarPage() {
                 className={cn(
                   "flex min-h-40 cursor-pointer flex-col rounded-xl border bg-card transition-colors hover:border-ink/30 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent",
                   isToday(day) ? "border-accent/50 bg-accent/[0.03]" : "border-line",
+                  holiday?.kind === "ferien" && "border-amber/30 bg-amber/[0.04]",
+                  holiday?.kind === "feiertag" && "border-marker/30 bg-marker/[0.04]",
                 )}
               >
                 <div
@@ -253,6 +278,19 @@ export default function CalendarPage() {
                     {format(day, "d")}
                   </span>
                 </div>
+                {holiday && (
+                  <p
+                    title={holiday.name}
+                    className={cn(
+                      "border-b px-3 py-1 font-mono text-[9px] leading-tight",
+                      holiday.kind === "ferien"
+                        ? "border-amber/20 text-amber"
+                        : "border-marker/20 text-marker/90",
+                    )}
+                  >
+                    {holiday.name}
+                  </p>
+                )}
                 <div className="flex-1 space-y-1.5 p-2">
                   {items.map((item) => (
                     <Chip

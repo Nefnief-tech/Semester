@@ -47,8 +47,8 @@ export default function GradesPage() {
   const deleteSubject = (subject: Subject) => {
     const count = entriesBySubject.get(subject.id)?.length ?? 0;
     const ok = window.confirm(
-      `Delete “${subject.name}”?` +
-        (count > 0 ? ` This also removes its ${count} grade${count === 1 ? "" : "s"}.` : ""),
+      t("Delete {name}? This also removes its grades.").replace("{name}", subject.name) +
+        (count > 0 ? ` (${count})` : ""),
     );
     if (ok) removeSubject(subject.id);
   };
@@ -61,7 +61,7 @@ export default function GradesPage() {
         <div>
           <h1 className="font-display text-4xl font-semibold tracking-tight">{t("Grades")}</h1>
           <p className="mt-1 font-mono text-xs tracking-wide text-ink-soft">
-            Punktesystem (0–15) · gewichtete Durchschnitte
+            {t("Punkte system (0-15) · weighted averages")}
           </p>
         </div>
         <div className="flex gap-2">
@@ -82,7 +82,7 @@ export default function GradesPage() {
       <div className="card mb-8 flex flex-wrap items-center gap-x-8 gap-y-4 px-6 py-5">
         <div>
           <span className="font-mono text-[10px] tracking-[0.14em] text-ink-soft uppercase">
-            gesamt
+            {t("overall")}
           </span>
           <p className="font-display text-5xl leading-tight font-semibold tracking-tight">
             {overall === null ? "-" : formatPoints(overall)}
@@ -93,8 +93,9 @@ export default function GradesPage() {
         </div>
         {overall !== null && <GradeBadge points={overall} big />}
         <p className="ml-auto max-w-64 text-right font-mono text-[11px] leading-relaxed text-ink-soft">
-          across {subjects.length} {subjects.length === 1 ? "subject" : "subjects"} ·{" "}
-          {entries.length} graded {entries.length === 1 ? "item" : "items"}
+          {t("across {n} subjects · {m} graded items")
+            .replace("{n}", String(subjects.length))
+            .replace("{m}", String(entries.length))}
         </p>
       </div>
 
@@ -108,7 +109,7 @@ export default function GradesPage() {
             hint={t("Subjects are shared across tasks, grades and the calendar. Create one to start tracking grades.")}
             action={
               <button className="btn-primary" onClick={() => setSubjectModal({ open: true })}>
-                <Plus className="size-4" /> New subject
+                <Plus className="size-4" /> {t("New subject")}
               </button>
             }
           />

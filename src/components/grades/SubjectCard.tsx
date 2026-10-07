@@ -1,8 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import type { GradeEntry, Subject } from "@/lib/types";
-import { cn, formatPoints, pointsToGrade, weightedAverage, weightSum } from "@/lib/utils";
+import {
+  cn,
+  formatPoints,
+  POINTS_TABLE,
+  pointsToGrade,
+  weightedAverage,
+  weightSum,
+} from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 import { GradeBadge, SubjectDot } from "@/components/ui/bits";
 
 export default function SubjectCard({
@@ -20,6 +29,7 @@ export default function SubjectCard({
   onAddGrade: (subjectId: string) => void;
   onEditGrade: (entry: GradeEntry) => void;
 }) {
+  const t = useT();
   const avg = weightedAverage(entries);
   const wSum = weightSum(entries);
 
@@ -46,7 +56,7 @@ export default function SubjectCard({
         </div>
       </header>
 
-      <div className="flex items-end justify-between px-5 pt-4 pb-3">
+      <div className="flex items-end justify-between gap-4 px-5 pt-4 pb-3">
         <div>
           <span className="font-mono text-[10px] tracking-[0.14em] text-ink-soft uppercase">
             Schnitt
@@ -58,12 +68,13 @@ export default function SubjectCard({
             )}
           </p>
         </div>
+        {entries.length > 1 && <Trend points={entries.map((e) => e.points)} />}
         {avg !== null && <GradeBadge points={avg} big />}
       </div>
       <p className="px-5 pb-3 font-mono text-[11px] text-ink-soft">
-        {entries.length} {entries.length === 1 ? "grade" : "grades"} · Σ weight{" "}
+        {entries.length} {entries.length === 1 ? t("grade") : t("grades")} · {t("Σ weight")}{" "}
         <span className={cn(entries.length > 0 && wSum !== 100 && "text-amber")}>{wSum}</span>
-        {entries.length > 0 && wSum !== 100 && " (relative)"}
+        {entries.length > 0 && wSum !== 100 && ` ${t("(relative)")}`}
       </p>
 
       {entries.length > 0 && (
@@ -104,14 +115,117 @@ export default function SubjectCard({
         </ul>
       )}
 
+      {entries.length > 0 && (
+        <TargetRow avg={avg} wSum={wSum} entries={entries} />
+      )}
+
       <footer className="mt-auto border-t border-line p-3">
         <button
           className="btn-ghost w-full border-dashed"
           onClick={() => onAddGrade(subject.id)}
         >
-          <Plus className="size-4" /> Add grade
+          <Plus className="size-4" /> {t("Add grade")}
         </button>
       </footer>
     </section>
+  );
+}
+
+/** tiny sparkline of the grade history, 15 Pkt. at the top */
+function Trend({ points }: { points: number[] }) {
+  const w = 88;
+  const h = 30;
+  const pad = 3;
+  const x = (i: number) => pad + (i * (w - 2 * pad)) / (points.length - 1);
+  // invert: high points sit high on the chart
+  const y = (p: number) => h - pad - (p / 15) * (h - 2 * pad);
+  const d = points
+    .map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(p).toFixed(1)}`)
+    .join(" ");
+  return (
+    <svg width={w} height={h} aria-hidden className="ml-auto shrink-0 overflow-visible">
+      <line
+        x1={pad}
+        y1={y(0)}
+        x2={w - pad}
+        y2={y(0)}
+        className="stroke-line"
+        strokeWidth="1"
+        strokeDasharray="2 3"
+      />
+      <path
+        d={d}
+        fill="none"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="stroke-accent"
+      />
+      <circle cx={x(points.length - 1)} cy={y(points[points.length - 1])} r="2.5" className="fill-accent" />
+    </svg>
+  );
+}
+
+/** "Was brauche ich für eine 2,0?" — required points on the next grade */
+function TargetRow({
+  avg,
+  wSum,
+  entries,
+}: {
+  avg: number | null;
+  wSum: number;
+  entries: GradeEntry[];
+}) {
+  const t = useT();
+  const [target, setTarget] = useState(12);
+  // assume the next grade carries the typical weight of this subject's grades
+  const w = Math.max(
+    1,
+    Math.round(entries.reduce((s, e) => s + e.weight, 0) / Math.max(1, entries.length)),
+  );
+
+  const needed =
+    avg === null ? null : (target * (wSum + w) - avg * wSum) / w;
+  const reachable = needed !== null && needed <= 15;
+  const already = needed !== null && needed <= 0;
+  const rounded = needed === null ? null : Math.ceil(needed);
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-line px-5 py-2.5">
+      <label className="flex cursor-pointer items-center gap-2 text-xs text-ink-soft">
+        <span className="font-mono text-[10px] tracking-[0.14em] uppercase">{t("Target grade")}</span>
+        <select
+          value={target}
+          onChange={(e) => setTarget(Number(e.target.value))}
+          className="chip cursor-pointer bg-card py-0.5 font-mono text-[11px]"
+        >
+          {[...POINTS_TABLE].reverse().map((row) => (
+            <option key={row.points} value={row.points}>
+              {row.grade} ({row.points} Pkt.)
+            </option>
+          ))}
+        </select>
+      </label>
+      {needed !== null && (
+        <p
+          className={cn(
+            "ml-auto text-xs font-medium",
+            already && "text-accent",
+            !already && reachable && needed <= 13 && "text-accent",
+            !already && reachable && needed > 13 && "text-amber",
+            !reachable && "text-marker",
+          )}
+        >
+          {already
+            ? t("already above target")
+            : reachable && rounded !== null
+              ? t("next grade at weight {w}: at least {p} pts ({g})")
+                  .replace("{w}", String(w))
+                  .replace("{p}", String(rounded))
+                  .replace("{g}", pointsToGrade(rounded).grade)
+              : t("not reachable any more")}
+        </p>
+      )}
+    </div>
   );
 }
