@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { Suspense, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { BookOpenText, Loader2, Plus, Trash2 } from "lucide-react";
@@ -56,7 +56,16 @@ async function extractMeta(file: File) {
   }
 }
 
+/** Suspense wrapper — useSearchParams() needs one for static prerendering */
 export default function ReadPage() {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <ReadContent />
+    </Suspense>
+  );
+}
+
+function ReadContent() {
   const hydrated = useHydrated();
   const t = useT();
   const searchParams = useSearchParams();

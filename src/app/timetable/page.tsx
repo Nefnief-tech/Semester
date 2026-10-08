@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Eraser, Pencil, Plus, RefreshCcw, Table2, Upload, X } from "lucide-react";
 import type { PortalPlan, PortalSub } from "@/lib/server/portal";
@@ -53,7 +53,16 @@ function subjectColor(name: string, names: Map<string, string>) {
   return names.get(name.toLowerCase()) ?? PALETTE[name.length % PALETTE.length];
 }
 
+/** Suspense wrapper — useSearchParams() needs one for static prerendering */
 export default function TimetablePage() {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <TimetableContent />
+    </Suspense>
+  );
+}
+
+function TimetableContent() {
   const hydrated = useHydrated();
   const entries = useTimetableStore((s) => s.entries);
   const setTimetable = useTimetableStore((s) => s.setTimetable);
