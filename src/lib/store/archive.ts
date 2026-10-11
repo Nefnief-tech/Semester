@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { gatedJSONStorage } from "../storage-guard";
 import type { GradeEntry, Homework, StudyEvent, Todo } from "../types";
 
 /**
@@ -37,6 +38,10 @@ export const useArchiveStore = create<ArchiveState>()(
       removeArchive: (id) =>
         set((s) => ({ archives: s.archives.filter((a) => a.id !== id) })),
     }),
-    { name: "semester.archive", version: 1 },
+    {
+      storage: gatedJSONStorage(),
+      name: "semester.archive",
+      version: 1,
+    },
   ),
 );

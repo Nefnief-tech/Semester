@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { gatedJSONStorage } from "../storage-guard";
 import type { ChatMessage, Deck, StudyDoc } from "../types";
 import { uid } from "../utils";
 
@@ -141,8 +142,7 @@ export const useStudyRoomStore = create<StudyRoomState>()(
       removeSelection: (docId) =>
         set((s) => ({ selectedDocIds: s.selectedDocIds.filter((x) => x !== docId) })),
     }),
-    {
-      name: "semester.studyroom",
+    { storage: gatedJSONStorage(), name: "semester.studyroom",
       version: 3,
       migrate: (state) => {
         const v = state as Partial<StudyRoomState> & { chat?: Array<{ id?: string; sentAt?: number }> };

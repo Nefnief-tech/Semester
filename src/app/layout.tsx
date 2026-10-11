@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import AppShell from "@/components/layout/AppShell";
-import ServiceWorkerRegister from "@/components/pwa/ServiceWorkerRegister";
-import CookieBanner from "@/components/consent/CookieBanner";
+import ConsentGate from "@/components/consent/CookieBanner";
 import "./globals.css";
 
 /**
@@ -63,9 +62,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-dvh">
         <script dangerouslySetInnerHTML={{ __html: themeInit }} />
-        <AppShell>{children}</AppShell>
-        <ServiceWorkerRegister />
-        <CookieBanner />
+        {/* consent gate: until the banner is answered nothing renders, runs
+            or persists — the service worker registers only after a decision */}
+        <ConsentGate>
+          <AppShell>{children}</AppShell>
+        </ConsentGate>
       </body>
     </html>
   );

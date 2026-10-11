@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { gatedJSONStorage } from "../storage-guard";
 import type { GradeEntry } from "../types";
 import { percentToPoints, uid } from "../utils";
 
@@ -66,8 +67,7 @@ export const useGradesStore = create<GradesState>()(
         set((s) => ({ entries: s.entries.filter((e) => e.subjectId !== subjectId) })),
       clearAll: () => set({ entries: [] }),
     }),
-    {
-      name: "semester.grades",
+    { storage: gatedJSONStorage(), name: "semester.grades",
       version: 2,
       // v1 stored score/max entries — convert them to the Punkte system
       migrate: (state) => {

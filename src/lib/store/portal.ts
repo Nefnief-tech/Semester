@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { gatedJSONStorage } from "../storage-guard";
 import type { PortalSub } from "@/lib/server/portal";
 import type { PortalPlan } from "@/lib/server/portal";
 import { hashId } from "../utils";
@@ -96,6 +97,6 @@ export const usePortalStore = create<PortalState>()(
           };
         }),
     }),
-    { name: "semester.portal", version: 1 },
+    { storage: gatedJSONStorage(), name: "semester.portal", version: 1 },
   ),
 );

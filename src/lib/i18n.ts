@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { gatedJSONStorage } from "./storage-guard";
 import { de as deLocale, type Locale } from "date-fns/locale";
 
 export type Lang = "de" | "en";
@@ -497,6 +498,9 @@ const de: Record<string, string> = {
     "Aufgaben, Noten und Bücher liegen lokal - keine Tracker, keine Werbung, nichts verlässt dieses Gerät. Externe Dienste laden erst nach deinem OK.",
   "Only essential": "Nur Notwendiges",
   "Allow everything": "Alles klar",
+  "One decision, then you're in.": "Eine Entscheidung, dann geht's los.",
+  "The choice itself is the only thing stored before you decide.":
+    "Die Entscheidung selbst ist das Einzige, was vor deiner Wahl gespeichert wird.",
 
   /* EPUB reader */
   Reading: "Lesen",
@@ -577,6 +581,7 @@ interface LangState {
 
 export const useLangStore = create<LangState>()(
   persist((set) => ({ lang: "de", setLang: (lang) => set({ lang }) }), {
+    storage: gatedJSONStorage(),
     name: "semester.lang",
     version: 1,
   }),

@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { gatedJSONStorage } from "../storage-guard";
 import { uid } from "../utils";
 
 /**
@@ -88,6 +89,6 @@ export const useBooksStore = create<BooksState>()(
       removeHighlight: (id) =>
         set((s) => ({ highlights: s.highlights.filter((h) => h.id !== id) })),
     }),
-    { name: "semester.books", version: 1 },
+    { storage: gatedJSONStorage(), name: "semester.books", version: 1 },
   ),
 );

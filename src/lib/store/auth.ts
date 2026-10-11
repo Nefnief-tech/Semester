@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { gatedJSONStorage } from "../storage-guard";
 import type { AuthUser } from "@/lib/auth/appwrite";
 
 export type SyncStatus = "unconfigured" | "loading" | "signed-out" | "signed-in";
@@ -72,6 +73,7 @@ export const useSyncMetaStore = create<SyncMetaState>()(
         }),
     }),
     {
+      storage: gatedJSONStorage(),
       name: "semester.syncmeta",
       version: 4,
       // v3 → v4: row collections start with fresh digests (first cycle uploads)

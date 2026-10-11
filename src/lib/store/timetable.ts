@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { gatedJSONStorage } from "../storage-guard";
 import type { TimetableEntry } from "../types";
 import { hashId } from "../utils";
 
@@ -37,6 +38,6 @@ export const useTimetableStore = create<TimetableState>()(
         set((s) => ({ entries: s.entries.filter((e) => timetableRowId(e) !== rowId) })),
       clear: () => set({ entries: [], updatedAt: Date.now() }),
     }),
-    { name: "semester.timetable", version: 1 },
+    { storage: gatedJSONStorage(), name: "semester.timetable", version: 1 },
   ),
 );

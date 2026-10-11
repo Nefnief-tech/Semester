@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { gatedJSONStorage } from "../storage-guard";
 
 /**
  * Device-level preferences that are not user data and never sync (like theme
@@ -59,6 +60,6 @@ export const useSettingsStore = create<SettingsState>()(
       setSchoolYear: (schoolYear) => set({ schoolYear: schoolYear.trim() }),
       setReading: (patch) => set((s) => ({ reading: { ...s.reading, ...patch } })),
     }),
-    { name: "semester.settings", version: 1 },
+    { storage: gatedJSONStorage(), name: "semester.settings", version: 1 },
   ),
 );

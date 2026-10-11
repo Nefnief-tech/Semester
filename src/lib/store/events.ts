@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { gatedJSONStorage } from "../storage-guard";
 import type { StudyEvent } from "../types";
 import { uid } from "../utils";
 
@@ -50,6 +51,6 @@ export const useEventsStore = create<EventsState>()(
         })),
       clearAll: () => set({ events: [] }),
     }),
-    { name: "semester.events", version: 1 },
+    { storage: gatedJSONStorage(), name: "semester.events", version: 1 },
   ),
 );

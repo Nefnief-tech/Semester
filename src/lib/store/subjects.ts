@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { gatedJSONStorage } from "../storage-guard";
 import type { Subject } from "../types";
 import { PALETTE, uid } from "../utils";
 import { useTodosStore } from "./todos";
@@ -51,6 +52,6 @@ export const useSubjectsStore = create<SubjectsState>()(
       },
       clearAll: () => set({ subjects: [] }),
     }),
-    { name: "semester.subjects", version: 1 },
+    { storage: gatedJSONStorage(), name: "semester.subjects", version: 1 },
   ),
 );

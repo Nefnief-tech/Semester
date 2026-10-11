@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { gatedJSONStorage } from "../storage-guard";
 import type { Todo } from "../types";
 import { uid } from "../utils";
 
@@ -60,6 +61,6 @@ export const useTodosStore = create<TodosState>()(
         })),
       clearAll: () => set({ todos: [] }),
     }),
-    { name: "semester.todos", version: 1 },
+    { storage: gatedJSONStorage(), name: "semester.todos", version: 1 },
   ),
 );

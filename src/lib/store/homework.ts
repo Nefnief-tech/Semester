@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { gatedJSONStorage } from "../storage-guard";
 import type { Homework } from "../types";
 import { uid } from "../utils";
 
@@ -66,6 +67,6 @@ export const useHomeworkStore = create<HomeworkState>()(
         })),
       clearAll: () => set({ homeworks: [] }),
     }),
-    { name: "semester.homework", version: 1 },
+    { storage: gatedJSONStorage(), name: "semester.homework", version: 1 },
   ),
 );
