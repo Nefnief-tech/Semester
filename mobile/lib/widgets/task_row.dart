@@ -136,70 +136,68 @@ class TaskTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sem = context.sem;
+    // the overdue rail is a left border, not a stretch child — a stretch
+    // Row inside a scroll view gets infinite height constraints and breaks
     return ClipRRect(
       borderRadius: BorderRadius.circular(kRadiusCard),
       child: ColoredBox(
         color: overdue && !done ? sem.marker.withValues(alpha: 0.045) : Colors.transparent,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // overdue rail
-            Container(width: 3, color: overdue && !done ? sem.marker : Colors.transparent),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
-                child: Row(
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              left: BorderSide(
+                color: overdue && !done ? sem.marker : Colors.transparent,
+                width: 3,
+              ),
+            ),
+          ),
+          padding: const EdgeInsets.fromLTRB(13, 11, 13, 11),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CheckDot(done: done, onTap: onToggle),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 1),
-                      child: CheckDot(done: done, onTap: onToggle),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                  decoration: done ? TextDecoration.lineThrough : null,
-                                  color: done ? sem.inkSoft : sem.ink,
-                                ),
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                            fontWeight: FontWeight.w500,
+                            decoration: done ? TextDecoration.lineThrough : null,
+                            color: done ? sem.inkSoft : sem.ink,
                           ),
-                          if (chips.isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            Wrap(spacing: 6, runSpacing: 4, children: chips),
-                          ],
-                          if (notes != null && notes!.isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            Text(
-                              notes!,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall!
-                                  .copyWith(color: sem.inkSoft),
-                            ),
-                          ],
-                        ],
-                      ),
                     ),
-                    if (onEdit != null) ...[
-                      const SizedBox(width: 4),
-                      SemIconButton(
-                        icon: Icons.edit_outlined,
-                        size: 16,
-                        onPressed: onEdit,
+                    if (chips.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Wrap(spacing: 6, runSpacing: 4, children: chips),
+                    ],
+                    if (notes != null && notes!.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        notes!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall!
+                            .copyWith(color: sem.inkSoft),
                       ),
                     ],
                   ],
                 ),
               ),
-            ),
-          ],
+              if (onEdit != null) ...[
+                const SizedBox(width: 4),
+                SemIconButton(
+                  icon: Icons.edit_outlined,
+                  size: 16,
+                  onPressed: onEdit,
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
