@@ -238,10 +238,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      {/* content on the planner canvas — pattern follows [data-grid] */}
+      {/* content on the planner canvas — pattern follows [data-grid] and
+          spans the full width of the content area, edge to edge */}
       <main className="md:pl-60">
-        <div className="mx-auto max-w-6xl px-4 pt-6 pb-28 md:px-10 md:pt-10 md:pb-16">
-          <div className="planner-grid">
+        <div className="planner-grid min-h-dvh">
+          <div className="mx-auto max-w-6xl px-4 pt-6 pb-28 md:px-10 md:pt-10 md:pb-16">
             {children}
           </div>
         </div>
