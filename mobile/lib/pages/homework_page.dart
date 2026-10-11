@@ -11,7 +11,7 @@ import '../widgets/bits.dart';
 import '../widgets/controls.dart';
 import '../widgets/datetime_field.dart';
 import '../widgets/subject_select.dart';
-import 'todos_page.dart';
+import '../widgets/task_row.dart';
 
 /// Port of homework/page.tsx + HomeworkFormModal.tsx — a pushed route with
 /// its own scaffold, mirroring the tasks page otherwise.
@@ -44,7 +44,6 @@ class _HomeworkPageState extends State<HomeworkPage> {
         child: ListenableBuilder(
           listenable: Listenable.merge([stores.homework, stores.subjects]),
           builder: (context, _) {
-            final sem = context.sem;
             final homeworks = stores.homework.homeworks;
             final subjects = stores.subjects.subjects;
 
@@ -122,7 +121,7 @@ class _HomeworkPageState extends State<HomeworkPage> {
                                 _status == _StatusFilter.done ? 'Nothing completed yet' : 'No homework here',
                             hint: _status == _StatusFilter.done
                                 ? 'Finished homework will collect here.'
-                                : "Add what your teachers assigned — with a due date and subject, it shows up on the calendar too.",
+                                : "Add what your teachers assigned. With a due date and subject, it shows up on the calendar too.",
                           ),
                         )
                       : ListView.builder(
@@ -131,71 +130,35 @@ class _HomeworkPageState extends State<HomeworkPage> {
                           itemBuilder: (context, i) {
                             final hw = sorted[i];
                             final subject = findSubject(subjects, hw.subjectId);
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 10),
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                              decoration: BoxDecoration(
-                                color: sem.card,
-                                border: Border.all(color: sem.line),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  CheckDot(done: hw.done, onTap: () => stores.homework.toggleHomework(hw.id)),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          hw.title,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodyMedium!
-                                              .copyWith(
-                                                fontWeight: FontWeight.w500,
-                                                decoration: hw.done ? TextDecoration.lineThrough : null,
-                                                color: hw.done ? sem.inkSoft : sem.ink,
-                                              ),
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Wrap(
-                                          spacing: 6,
-                                          runSpacing: 4,
-                                          children: [
-                                            if (subject != null) SubjectTag(subject.name, subject.color),
-                                            DueChip(hw.due, done: hw.done),
-                                            PriorityBadge(hw.priority),
-                                          ],
-                                        ),
-                                        if (hw.notes != null && hw.notes!.isNotEmpty) ...[
-                                          const SizedBox(height: 6),
-                                          Text(
-                                            hw.notes!,
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodySmall!
-                                                .copyWith(color: sem.inkSoft),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: SwipeActionRow(
+                                id: hw.id,
+                                done: hw.done,
+                                onToggleDone: () => stores.homework.toggleHomework(hw.id),
+                                onDelete: () {
+                                  stores.homework.removeHomework(hw.id);
+                                  showUndoDelete(
+                                    context,
+                                    message: 'Homework deleted',
+                                    onUndo: () => stores.homework.upsertOne(hw),
+                                  );
+                                },
+                                child: TaskTile(
+                                  done: hw.done,
+                                  overdue: (dueInfo(hw.due)?.overdue ?? false) && !hw.done,
+                                  title: hw.title,
+                                  notes: hw.notes,
+                                  onToggle: () => stores.homework.toggleHomework(hw.id),
+                                  onEdit: () => _openForm(homework: hw),
+                                  chips: taskChips(
+                                    context,
+                                    subject: subject,
+                                    due: hw.due,
+                                    done: hw.done,
+                                    priority: hw.priority,
                                   ),
-                                  const SizedBox(width: 6),
-                                  SemIconButton(
-                                    icon: Icons.edit_outlined,
-                                    size: 16,
-                                    onPressed: () => _openForm(homework: hw),
-                                  ),
-                                  SemIconButton(
-                                    icon: Icons.delete_outline,
-                                    size: 16,
-                                    onPressed: () => stores.homework.removeHomework(hw.id),
-                                  ),
-                                ],
+                                ),
                               ),
                             );
                           },

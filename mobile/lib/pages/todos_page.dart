@@ -11,6 +11,7 @@ import '../widgets/bits.dart';
 import '../widgets/controls.dart';
 import '../widgets/datetime_field.dart';
 import '../widgets/subject_select.dart';
+import '../widgets/task_row.dart';
 
 /// Port of todos/page.tsx + TodoFormModal.tsx.
 
@@ -139,7 +140,7 @@ class _TodosPageState extends State<TodosPage> {
                         title: _status == _StatusFilter.done ? 'Nothing completed yet' : 'No tasks here',
                         hint: _status == _StatusFilter.done
                             ? 'Finished tasks will collect here.'
-                            : 'Add a task with a due date, priority and subject — it will also show up on the calendar.',
+                            : 'Add a task with a due date, priority and subject. It will also show up on the calendar.',
                         action: SemPrimaryButton(
                           onPressed: _openForm,
                           child: const Row(mainAxisSize: MainAxisSize.min, children: [
@@ -156,74 +157,35 @@ class _TodosPageState extends State<TodosPage> {
                       itemBuilder: (context, i) {
                         final todo = sorted[i];
                         final subject = findSubject(subjects, todo.subjectId);
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                          decoration: BoxDecoration(
-                            color: sem.card,
-                            border: Border.all(color: sem.line),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              CheckDot(
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: SwipeActionRow(
+                            id: todo.id,
+                            done: todo.done,
+                            onToggleDone: () => stores.todos.toggleTodo(todo.id),
+                            onDelete: () {
+                              stores.todos.removeTodo(todo.id);
+                              showUndoDelete(
+                                context,
+                                message: 'Task deleted',
+                                onUndo: () => stores.todos.upsertOne(todo),
+                              );
+                            },
+                            child: TaskTile(
+                              done: todo.done,
+                              overdue: (dueInfo(todo.due)?.overdue ?? false) && !todo.done,
+                              title: todo.title,
+                              notes: todo.notes,
+                              onToggle: () => stores.todos.toggleTodo(todo.id),
+                              onEdit: () => _openForm(todo: todo),
+                              chips: taskChips(
+                                context,
+                                subject: subject,
+                                due: todo.due,
                                 done: todo.done,
-                                onTap: () => stores.todos.toggleTodo(todo.id),
+                                priority: todo.priority,
                               ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      todo.title,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium!
-                                          .copyWith(
-                                            fontWeight: FontWeight.w500,
-                                            decoration: todo.done ? TextDecoration.lineThrough : null,
-                                            color: todo.done ? sem.inkSoft : sem.ink,
-                                          ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Wrap(
-                                      spacing: 6,
-                                      runSpacing: 4,
-                                      children: [
-                                        if (subject != null) SubjectTag(subject.name, subject.color),
-                                        DueChip(todo.due, done: todo.done),
-                                        PriorityBadge(todo.priority),
-                                      ],
-                                    ),
-                                    if (todo.notes != null && todo.notes!.isNotEmpty) ...[
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        todo.notes!,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall!
-                                            .copyWith(color: sem.inkSoft),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              SemIconButton(
-                                icon: Icons.edit_outlined,
-                                size: 16,
-                                onPressed: () => _openForm(todo: todo),
-                              ),
-                              SemIconButton(
-                                icon: Icons.delete_outline,
-                                size: 16,
-                                onPressed: () => stores.todos.removeTodo(todo.id),
-                              ),
-                            ],
+                            ),
                           ),
                         );
                       },
@@ -267,34 +229,6 @@ class _TodosPageState extends State<TodosPage> {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// round check button — filled accent when done
-class CheckDot extends StatelessWidget {
-  final bool done;
-  final VoidCallback onTap;
-  const CheckDot({super.key, required this.done, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final sem = context.sem;
-    return InkWell(
-      onTap: onTap,
-      customBorder: const CircleBorder(),
-      child: Container(
-        width: 20,
-        height: 20,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: done ? sem.accent : Colors.transparent,
-          border: Border.all(color: done ? sem.accent : sem.ink.withValues(alpha: 0.3)),
-        ),
-        child: done
-            ? Icon(Icons.check, size: 12, color: sem.paper)
-            : const SizedBox.shrink(),
       ),
     );
   }

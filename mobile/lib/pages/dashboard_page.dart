@@ -111,48 +111,54 @@ class DashboardPage extends StatelessWidget {
 
         final isEmpty = todos.isEmpty && events.isEmpty && subjects.isEmpty;
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        /* ---------- sections, composed once, laid out per width ---------- */
+
+        final greetingHeader = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              longDateLabel(now).toUpperCase(),
+              style: Theme.of(context).textTheme.labelSmall!.copyWith(letterSpacing: 1.6),
+            ),
+            const SizedBox(height: 8),
+            Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(text: '${_greeting()}.'),
+                  TextSpan(
+                    text: dueToday > 0
+                        ? ' $dueToday ${dueToday == 1 ? 'task' : 'tasks'} due today.'
+                        : ' Nothing due today.',
+                    style: TextStyle(
+                      color: sem.accent,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
+              style: Theme.of(context).textTheme.displayLarge,
+            ),
+            if (isEmpty) ...[
+              const SizedBox(height: 24),
+              const EmptyState(
+                icon: Icons.auto_awesome,
+                title: 'Your desk is empty',
+                hint: 'Add a subject, a task or a calendar entry to get started.',
+              ),
+            ],
+          ],
+        );
+
+        final todaySection = StaggerIn(
+          index: 0,
+          child: _TodayHero(items: todayFocus, hasOverdue: hasOverdue),
+        );
+
+        final upNextSection = StaggerIn(
+          index: 1,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                longDateLabel(now).toUpperCase(),
-                style: Theme.of(context).textTheme.labelSmall!.copyWith(letterSpacing: 1.6),
-              ),
-              const SizedBox(height: 8),
-              Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(text: '${_greeting()}.'),
-                    TextSpan(
-                      text: dueToday > 0
-                          ? ' $dueToday ${dueToday == 1 ? 'task' : 'tasks'} due today.'
-                          : ' Nothing due today.',
-                      style: TextStyle(
-                        color: sem.accent,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ],
-                ),
-                style: Theme.of(context).textTheme.displayLarge,
-              ),
-              if (isEmpty) ...[
-                const SizedBox(height: 24),
-                const EmptyState(
-                  icon: Icons.auto_awesome,
-                  title: 'Your desk is empty',
-                  hint: 'Add a subject, a task or a calendar entry to get started.',
-                ),
-              ],
-              const SizedBox(height: 20),
-
-              // TODAY — the focus: overdue + due today, concretely
-              _TodayHero(items: todayFocus, hasOverdue: hasOverdue),
-              const SizedBox(height: 28),
-
-              // up next — the queue after today, soonest first
               _SectionHeader(
                 title: 'Up next',
                 actionLabel: 'all tasks →',
@@ -175,9 +181,15 @@ class DashboardPage extends StatelessWidget {
                       _UpcomingRow(item: item),
                   ],
                 ),
+            ],
+          ),
+        );
 
-              // next 7 days
-              const SizedBox(height: 32),
+        final weekSection = StaggerIn(
+          index: 2,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               _SectionHeader(
                 title: 'Next 7 days',
                 actionLabel: 'calendar →',
@@ -192,93 +204,174 @@ class DashboardPage extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    for (final key in schedule) ...[
+                    for (final key in schedule)
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
-                        child: Text(
-                          dayKeyLabel(key).toUpperCase(),
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelSmall!
-                              .copyWith(letterSpacing: 1.2),
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: SemCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(14, 10, 14, 2),
+                                child: Text(
+                                  dayKeyLabel(key).toUpperCase(),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelSmall!
+                                      .copyWith(letterSpacing: 1.2),
+                                ),
+                              ),
+                              for (final item in buckets[key]!)
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+                                  child: _ScheduleRow(item: item),
+                                ),
+                              const SizedBox(height: 4),
+                            ],
+                          ),
                         ),
                       ),
-                      for (final item in buckets[key]!)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 6),
-                          child: _ScheduleRow(item: item),
-                        ),
-                      const SizedBox(height: 8),
-                    ],
                   ],
                 ),
+            ],
+          ),
+        );
 
-              // numbers — quiet, at the end
-              const SizedBox(height: 32),
-              _SummaryStrip(
-                tasks: openTodos.length,
-                homework: openHomework.length,
-                grade: overall == null ? null : formatPoints(overall),
-              ),
+        final summarySection = StaggerIn(
+          index: 3,
+          child: _SummaryStrip(
+            tasks: openTodos.length,
+            homework: openHomework.length,
+            grade: overall == null ? null : formatPoints(overall),
+          ),
+        );
 
-              // subject averages
-              if (subjects.isNotEmpty) ...[
-                const SizedBox(height: 32),
-                _SectionHeader(
-                  title: 'Subjects',
-                  actionLabel: 'manage grades →',
-                  onAction: () => AppNav.I.handle('grades'),
+        final subjectsSection = subjects.isEmpty
+            ? null
+            : StaggerIn(
+                index: 4,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _SectionHeader(
+                      title: 'Subjects',
+                      actionLabel: 'manage grades →',
+                      onAction: () => AppNav.I.handle('grades'),
+                    ),
+                    SemCard(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                      child: Column(
+                        children: [
+                          for (final s in subjects)
+                            _SubjectRow(
+                              subject: s,
+                              avg: weightedAverage(
+                                  entries.where((e) => e.subjectId == s.id)),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                SemCard(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+              );
+
+        final footer = Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            TextButton.icon(
+              onPressed: () async {
+                final ok = await confirmDialog(
+                  context,
+                  'Delete all tasks, homework, grades, events and subjects? This cannot be undone.',
+                  title: 'Clear all data',
+                  confirmLabel: 'Clear everything',
+                );
+                if (ok) {
+                  stores.todos.clearAll();
+                  stores.homework.clearAll();
+                  stores.grades.clearAll();
+                  stores.events.clearAll();
+                  stores.subjects.clearAll();
+                }
+              },
+              icon: Icon(Icons.delete_outline, size: 14, color: sem.inkSoft.withValues(alpha: 0.7)),
+              label: Text(
+                'clear all data',
+                style: Theme.of(context)
+                    .textTheme
+                    .labelSmall!
+                    .copyWith(color: sem.inkSoft.withValues(alpha: 0.7)),
+              ),
+            ),
+          ],
+        );
+
+        /* ---------- layout: one column on the phone, two on the tablet ---------- */
+
+        return LayoutBuilder(builder: (context, viewport) {
+          final wide = viewport.maxWidth >= 720;
+
+          Widget gap(double h) => SizedBox(height: h);
+
+          final Widget body;
+          if (!wide) {
+            body = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                greetingHeader,
+                gap(20),
+                todaySection,
+                gap(28),
+                upNextSection,
+                gap(32),
+                weekSection,
+                gap(32),
+                summarySection,
+                if (subjectsSection != null) ...[gap(32), subjectsSection],
+              ],
+            );
+          } else {
+            body = Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 5,
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      for (final s in subjects)
-                        _SubjectRow(
-                          subject: s,
-                          avg: weightedAverage(
-                              entries.where((e) => e.subjectId == s.id)),
-                        ),
+                      greetingHeader,
+                      gap(20),
+                      todaySection,
+                      gap(28),
+                      upNextSection,
+                      if (subjectsSection != null) ...[gap(32), subjectsSection],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 28),
+                Expanded(
+                  flex: 4,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      weekSection,
+                      gap(32),
+                      summarySection,
                     ],
                   ),
                 ),
               ],
+            );
+          }
 
-              // danger zone
-              const SizedBox(height: 40),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton.icon(
-                    onPressed: () async {
-                      final ok = await confirmDialog(
-                        context,
-                        'Delete all tasks, homework, grades, events and subjects? This cannot be undone.',
-                        title: 'Clear all data',
-                        confirmLabel: 'Clear everything',
-                      );
-                      if (ok) {
-                        stores.todos.clearAll();
-                        stores.homework.clearAll();
-                        stores.grades.clearAll();
-                        stores.events.clearAll();
-                        stores.subjects.clearAll();
-                      }
-                    },
-                    icon: Icon(Icons.delete_outline, size: 14, color: sem.inkSoft.withValues(alpha: 0.7)),
-                    label: Text(
-                      'clear all data',
-                      style: Theme.of(context)
-                          .textTheme
-                          .labelSmall!
-                          .copyWith(color: sem.inkSoft.withValues(alpha: 0.7)),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
+          return SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [body, gap(40), footer],
+            ),
+          );
+        });
       },
     );
   }
@@ -328,7 +421,7 @@ class _TodayHero extends StatelessWidget {
           const SizedBox(height: 4),
           if (calm)
             Text(
-              'Nothing due — the desk is calm.',
+              'Nothing due today. The desk is calm.',
               style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                     color: sem.inkSoft,
                     fontStyle: FontStyle.italic,
@@ -339,10 +432,10 @@ class _TodayHero extends StatelessWidget {
               padding: const EdgeInsets.only(top: 10),
               child: Row(
                 children: [
-                  _RoundCheck(
+                  CheckDot(
                     done: item.done,
                     size: 20,
-                    onChanged: (_) => item.toggle(),
+                    onTap: item.toggle,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -384,7 +477,7 @@ class _TodayHero extends StatelessWidget {
           if (!stores.auth.online) ...[
             const SizedBox(height: 6),
             Text(
-              'offline — saved locally',
+              'offline, saved locally',
               style: Theme.of(context).textTheme.labelSmall!.copyWith(
                     fontSize: 9,
                     color: sem.inkSoft.withValues(alpha: 0.7),
@@ -410,7 +503,7 @@ class _SummaryStrip extends StatelessWidget {
     final cells = [
       ('tasks', '$tasks', 'tasks'),
       ('homework', '$homework', 'homework'),
-      ('grade', grade ?? '—', 'grades'),
+      ('grade', grade ?? '·', 'grades'),
     ];
     return SemCard(
       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -515,15 +608,15 @@ class _UpcomingRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: sem.card,
         border: Border.all(color: sem.line),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(kRadiusTile),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _RoundCheck(
+          CheckDot(
             done: done,
             size: 20,
-            onChanged: (_) {
+            onTap: () {
               if (item.isHomework) {
                 stores.homework.toggleHomework(item.homework!.id);
               } else {
@@ -568,35 +661,6 @@ class _UpcomingRow extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// round checkbox used across dashboard / tasks / homework
-class _RoundCheck extends StatelessWidget {
-  final bool done;
-  final double size;
-  final ValueChanged<bool> onChanged;
-  const _RoundCheck({required this.done, required this.onChanged, this.size = 20});
-
-  @override
-  Widget build(BuildContext context) {
-    final sem = context.sem;
-    return InkWell(
-      onTap: () => onChanged(!done),
-      customBorder: const CircleBorder(),
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: done ? sem.accent : Colors.transparent,
-          border: Border.all(color: done ? sem.accent : sem.ink.withValues(alpha: 0.3)),
-        ),
-        child: done
-            ? Icon(Icons.check, size: size * 0.6, color: sem.paper)
-            : const SizedBox.shrink(),
       ),
     );
   }
@@ -650,7 +714,7 @@ class _SubjectRow extends StatelessWidget {
           SizedBox(
             width: 46,
             child: Text(
-              avg == null ? '—' : formatPoints(avg!),
+              avg == null ? '·' : formatPoints(avg!),
               textAlign: TextAlign.right,
               style: Theme.of(context)
                   .textTheme
@@ -754,8 +818,9 @@ class _ScheduleRow extends StatelessWidget {
             ),
           ),
           if (isTodo)
-            _MiniCheck(
+            CheckDot(
               done: done,
+              size: 14,
               onTap: () => stores.todos.toggleTodo(item.todo!.id),
             ),
         ],
@@ -765,38 +830,11 @@ class _ScheduleRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
       decoration: BoxDecoration(
-        color: sem.card,
-        border: Border.all(color: sem.line),
+        color: sem.paper,
+        border: Border.all(color: sem.line.withValues(alpha: 0.7)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: content,
-    );
-  }
-}
-
-class _MiniCheck extends StatelessWidget {
-  final bool done;
-  final VoidCallback onTap;
-  const _MiniCheck({required this.done, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final sem = context.sem;
-    return InkWell(
-      onTap: onTap,
-      customBorder: const CircleBorder(),
-      child: Container(
-        width: 14,
-        height: 14,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: done ? sem.accent : Colors.transparent,
-          border: Border.all(color: done ? sem.accent : sem.ink.withValues(alpha: 0.3)),
-        ),
-        child: done
-            ? Icon(Icons.check, size: 9, color: sem.paper)
-            : const SizedBox.shrink(),
-      ),
     );
   }
 }

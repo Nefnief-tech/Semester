@@ -225,12 +225,12 @@ class _AuthPanelState extends State<AuthPanel> {
   }
 
   String _friendlyMfaError(String raw) {
-    if (raw.contains('rate')) return 'Too many attempts — wait a minute and try again.';
+    if (raw.contains('rate')) return 'Too many attempts. Wait a minute and try again.';
     if (raw.contains('challenge') || raw.contains('expired')) {
-      return 'This code request ran out — send a new one.';
+      return 'This code request ran out. Send a new one.';
     }
     if (raw.contains('invalid') || raw.contains('token') || raw.contains('credentials')) {
-      return "That code isn't right — check the newest email (or recovery code) and try again.";
+      return "That code isn't right. Check the newest email (or recovery code) and try again.";
     }
     if (raw.contains('smtp')) return "The mail server isn't configured for this project yet.";
     if (raw.length > 200) return raw.substring(0, 200);
@@ -278,7 +278,7 @@ class _AuthPanelState extends State<AuthPanel> {
     if (raw.contains('invalid_token') || raw.contains('expired')) {
       return 'This link is invalid or has expired. Request a new one.';
     }
-    if (raw.contains('rate_limit')) return 'Too many requests — wait a minute and try again.';
+    if (raw.contains('rate_limit')) return 'Too many requests. Wait a minute and try again.';
     if (raw.contains('smtp') || raw.contains('mail')) {
       return 'The mail server isn\'t configured for this project yet.';
     }
@@ -407,7 +407,7 @@ class _AuthPanelState extends State<AuthPanel> {
                 if (_verifySent) ...[
                   const SizedBox(height: 6),
                   Text(
-                    'sent — follow the link in your inbox (valid 7 days)',
+                    'sent. Follow the link in your inbox (valid 7 days)',
                     style: Theme.of(context)
                         .textTheme
                         .labelSmall!
@@ -539,7 +539,7 @@ class _AuthPanelState extends State<AuthPanel> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Two-factor is on. Save these recovery codes — each works once '
+                        'Two-factor is on. Save these recovery codes. Each works once '
                         'instead of an emailed code, and they are the only way back if '
                         'you lose access to your inbox.',
                         style: Theme.of(context).textTheme.labelSmall!.copyWith(height: 1.5),
@@ -652,7 +652,7 @@ class _AuthPanelState extends State<AuthPanel> {
               const SizedBox(height: 6),
               Text(
                 _mfaFactor == 'email'
-                    ? 'We sent a code to your email — it expires in 15 minutes.'
+                    ? 'We sent a code to your email. It expires in 15 minutes.'
                     : _mfaFactor == 'totp'
                         ? 'Use your authenticator app to continue.'
                         : 'Use one of the recovery codes you saved when enabling 2FA.',
@@ -661,7 +661,7 @@ class _AuthPanelState extends State<AuthPanel> {
               if (_mfaFactor == 'email' && _mfaChallengeId == null) ...[
                 const SizedBox(height: 8),
                 Text(
-                  _mfaSending ? 'sending the code…' : 'the code could not be sent — try resending',
+                  _mfaSending ? 'sending the code…' : 'the code could not be sent. Try resending',
                   style: Theme.of(context).textTheme.labelSmall,
                 ),
               ],
@@ -778,7 +778,7 @@ class _AuthPanelState extends State<AuthPanel> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'We\'ll send a reset link to your email. It opens on any device — '
+                  'We\'ll send a reset link to your email. It opens on any device. '
                   'the new password is set in the browser.',
                   style: Theme.of(context).textTheme.labelSmall!.copyWith(height: 1.5),
                 ),
@@ -794,7 +794,7 @@ class _AuthPanelState extends State<AuthPanel> {
                 if (_recoverySent) ...[
                   const SizedBox(height: 8),
                   Text(
-                    'recovery email sent — valid for 1 hour',
+                    'recovery email sent. Valid for 1 hour',
                     style: Theme.of(context)
                         .textTheme
                         .labelSmall!
@@ -917,7 +917,7 @@ class _AuthPanelState extends State<AuthPanel> {
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        'Authenticated by your Appwrite project — the password never touches the '
+                        'Authenticated by your Appwrite project. The password never touches the '
                         'Semester server. Sessions are managed by the Appwrite SDK.',
                         style: Theme.of(context).textTheme.labelSmall!.copyWith(height: 1.5),
                       ),

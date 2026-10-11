@@ -88,7 +88,7 @@ class _CalendarPageState extends State<CalendarPage> {
     }
     final start = _weekStart(_cursor);
     final end = start.add(const Duration(days: 6));
-    return '${formatDayMonth(start)} – ${formatDayMonth(end)} ${end.year}';
+    return '${formatDayMonth(start)} - ${formatDayMonth(end)} ${end.year}';
   }
 
   @override
@@ -288,10 +288,12 @@ class _CalendarPageState extends State<CalendarPage> {
                           '${day.day}',
                           style: Theme.of(context).textTheme.labelSmall!.copyWith(
                                 fontSize: 11,
-                                fontWeight: isToday ? FontWeight.w600 : FontWeight.w400,
+                                fontWeight: isToday
+                                    ? FontWeight.w600
+                                    : (inMonth ? FontWeight.w500 : FontWeight.w400),
                                 color: isToday
                                     ? sem.paper
-                                    : (inMonth ? sem.inkSoft : sem.inkSoft.withValues(alpha: 0.5)),
+                                    : (inMonth ? sem.ink : sem.inkSoft.withValues(alpha: 0.5)),
                               ),
                         ),
                       ),
@@ -654,7 +656,8 @@ class _EventFormSheetState extends State<EventFormSheet> {
                   _pickerField(
                     context,
                     icon: Icons.calendar_today_outlined,
-                    label: _day ?? '—',
+                    label: _day ?? 'Set date',
+                    placeholder: 'Set date',
                     onTap: () async {
                       final picked = await pickDate(context, _day);
                       if (picked != null && picked != _day) {
@@ -675,7 +678,8 @@ class _EventFormSheetState extends State<EventFormSheet> {
                   _pickerField(
                     context,
                     icon: Icons.schedule,
-                    label: _time ?? '—',
+                    label: _time ?? 'Set time',
+                    placeholder: 'Set time',
                     onTap: () async {
                       final picked = await pickTime(context, _time);
                       if (picked != null && picked != _time) {
@@ -778,6 +782,7 @@ class _EventFormSheetState extends State<EventFormSheet> {
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    String placeholder = '',
   }) {
     final sem = context.sem;
     return InkWell(
@@ -800,7 +805,7 @@ class _EventFormSheetState extends State<EventFormSheet> {
                 style: Theme.of(context)
                     .textTheme
                     .labelMedium!
-                    .copyWith(fontSize: 13, color: label == '—' ? sem.inkSoft : sem.ink),
+                    .copyWith(fontSize: 13, color: label == placeholder ? sem.inkSoft : sem.ink),
               ),
             ),
           ],

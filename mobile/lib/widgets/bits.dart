@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/types.dart';
 import '../theme/app_theme.dart';
 import '../utils/utils.dart';
+import 'motion.dart';
 
 /// Port of the web app's `src/components/ui/bits.tsx` + the `.chip`/`.card`
 /// component classes from globals.css.
@@ -150,7 +151,7 @@ class DueChip extends StatelessWidget {
     return SemChip(
       mono: true,
       tone: alarming ? Tone.bad : (hot ? Tone.warn : null),
-      text: alarming ? 'Overdue — ${info.label}' : info.label,
+      text: alarming ? 'Overdue ${info.label.replaceAll(' · ', ' ')}' : info.label,
       leading: Icon(
         Icons.schedule,
         size: 11,
@@ -205,6 +206,42 @@ class GradeBadge extends StatelessWidget {
   }
 }
 
+/// round checkbox used across dashboard / tasks / homework — the tap target
+/// animates its fill, the check pops in with a quick scale
+class CheckDot extends StatelessWidget {
+  final bool done;
+  final VoidCallback onTap;
+  final double size;
+  const CheckDot({super.key, required this.done, required this.onTap, this.size = 20});
+
+  @override
+  Widget build(BuildContext context) {
+    final sem = context.sem;
+    return InkWell(
+      onTap: onTap,
+      customBorder: const CircleBorder(),
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: done ? sem.accent : Colors.transparent,
+          border: Border.all(
+            color: done ? sem.accent : sem.ink.withValues(alpha: 0.3),
+            width: 1.5,
+          ),
+        ),
+        child: AnimatedScale(
+          scale: done ? 1 : 0,
+          duration: kMotionFast,
+          curve: kMotionCurve,
+          child: Icon(Icons.check, size: size * 0.6, color: sem.paper),
+        ),
+      ),
+    );
+  }
+}
+
 /* ---------------- empty state ---------------- */
 
 class EmptyState extends StatelessWidget {
@@ -225,7 +262,7 @@ class EmptyState extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 44),
         decoration: BoxDecoration(
           color: sem.card.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(kRadiusCard),
         ),
         child: Column(
           children: [

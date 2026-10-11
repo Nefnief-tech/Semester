@@ -28,7 +28,7 @@ class MorePage extends StatelessWidget {
         children: [
           const PageHeader(
             title: 'More',
-            subtitle: 'calendar · grades · study · settings',
+            subtitle: 'Calendar, Grades, Study Room, Settings',
           ),
           SemCard(
             padding: const EdgeInsets.symmetric(vertical: 4),
@@ -36,27 +36,55 @@ class MorePage extends StatelessWidget {
               children: [
                 for (var i = 0; i < items.length; i++) ...[
                   if (i > 0)
-                    Divider(height: 1, indent: 56, color: sem.line),
-                  Pressable(
-                    onTap: () => AppNav.I.handle(items[i].$4),
-                    child: ListTile(
-                      leading: Icon(items[i].$1, size: 22, color: sem.accent),
-                      title: Text(
-                        items[i].$2,
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyLarge!
-                            .copyWith(fontWeight: FontWeight.w500),
+                    Divider(height: 1, indent: 72, color: sem.line),
+                  StaggerIn(
+                    index: i,
+                    child: Pressable(
+                      onTap: () => AppNav.I.handle(items[i].$4),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: sem.accentSoft,
+                                borderRadius: BorderRadius.circular(kRadiusTile),
+                              ),
+                              child: Icon(items[i].$1,
+                                  size: 20, color: sem.accent),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    items[i].$2,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyLarge!
+                                        .copyWith(fontWeight: FontWeight.w500),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    items[i].$3,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall!
+                                        .copyWith(color: sem.inkSoft),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(Icons.chevron_right,
+                                size: 18, color: sem.inkSoft),
+                          ],
+                        ),
                       ),
-                      subtitle: Text(
-                        items[i].$3,
-                        style: Theme.of(context)
-                            .textTheme
-                            .labelSmall!
-                            .copyWith(color: sem.inkSoft),
-                      ),
-                      trailing: Icon(Icons.chevron_right,
-                          size: 18, color: sem.inkSoft),
                     ),
                   ),
                 ],

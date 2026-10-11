@@ -39,22 +39,22 @@ String summarizeProviderError(String? detail) {
 
 String _friendlyUploadError(String code) {
   const errors = {
-    'unsupported_type': 'Unsupported file type — use PDF, DOCX, PPTX, TXT or MD.',
+    'unsupported_type': 'Unsupported file type. Use PDF, DOCX, PPTX, TXT or MD.',
     'too_large': 'That file is larger than 20 MB.',
     'extract_failed':
         "Couldn't read this file. Scanned PDFs without a text layer aren't supported.",
     'no_text': 'No extractable text found in this file.',
-    'missing_file': 'Upload failed — try again.',
-    'auth_required': 'Sign in first — open Account in the top bar.',
+    'missing_file': 'Upload failed. Try again.',
+    'auth_required': 'Sign in first. Open Account in the top bar.',
   };
-  return errors[code] ?? 'Upload failed — try again.';
+  return errors[code] ?? 'Upload failed. Try again.';
 }
 
 String _friendlyChatError(String code, String detail) {
   if (code == 'not_configured') {
-    return 'AI is not configured — set an API key in the server .env.local and restart it.';
+    return 'AI is not configured. Set an API key in the server .env.local and restart it.';
   }
-  if (code == 'auth_required') return 'Sign in first — open Account in the top bar.';
+  if (code == 'auth_required') return 'Sign in first. Open Account in the top bar.';
   if (detail.isNotEmpty) return 'The AI provider rejected the request: $detail';
   return 'Sorry, the AI provider returned an error. Please try again.';
 }
@@ -131,7 +131,7 @@ class SemesterApi {
             headers: await getAuthHeaders())
         .timeout(const Duration(seconds: 15));
     if (res.statusCode != 200) {
-      throw ApiException('Delete failed — try again.');
+      throw ApiException('Delete failed. Try again.');
     }
   }
 
@@ -160,13 +160,13 @@ class SemesterApi {
         throw ApiException('Add an API key to the server .env.local first.');
       }
       if (code == 'auth_required') {
-        throw ApiException('Sign in first — open Account in the top bar.');
+        throw ApiException('Sign in first. Open Account in the top bar.');
       }
       if (detail.isNotEmpty) {
         throw ApiException('The AI provider rejected the request: $detail');
       }
       throw ApiException(
-          "The AI didn't return usable flashcards — try again or pick different documents.");
+          "The AI didn't return usable flashcards. Try again or pick different documents.");
     }
     final cards = ((json['cards'] as List?) ?? [])
         .whereType<Map>()
@@ -264,9 +264,9 @@ class SemesterApi {
       final code = json is Map ? '${json['error'] ?? 'portal_unreachable'}' : 'portal_unreachable';
       final detail = json is Map ? (json['detail'] as String? ?? '') : '';
       if (code == 'portal_auth') {
-        throw ApiException('Portal rejected the login — check portal URL, email and password.');
+        throw ApiException('Portal rejected the login. Check portal URL, email and password.');
       }
-      if (code == 'auth_required') throw ApiException('Sign in first — open Account in the top bar.');
+      if (code == 'auth_required') throw ApiException('Sign in first. Open Account in the top bar.');
       if (code == 'missing_settings') {
         throw ApiException('Fill in portal URL, email and password below.');
       }

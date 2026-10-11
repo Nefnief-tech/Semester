@@ -206,7 +206,7 @@ class _TimetablePageState extends State<TimetablePage> {
               PageHeader(
                 title: 'Timetable',
                 subtitle:
-                    'paste your timetable as JSON — formatted automatically',
+                    "paste your school's timetable JSON, get a clean grid",
                 trailing: entries.isNotEmpty
                     ? Row(
                         mainAxisSize: MainAxisSize.min,
@@ -716,7 +716,7 @@ class _TimetablePageState extends State<TimetablePage> {
     } else {
       header = const SemLabel('today');
       body = Text(
-        "School's out — no more lessons today.",
+        "School's out. No more lessons today.",
         style: theme.textTheme.bodyMedium!
             .copyWith(color: sem.inkSoft, fontStyle: FontStyle.italic),
       );
@@ -849,8 +849,11 @@ class _TimetablePageState extends State<TimetablePage> {
 
     if (items.isEmpty && cellSubs.isEmpty) {
       return Text(
-        '—',
-        style: TextStyle(color: sem.inkSoft.withValues(alpha: 0.4)),
+        '·',
+        style: TextStyle(
+          color: sem.inkSoft.withValues(alpha: 0.4),
+          fontWeight: FontWeight.w600,
+        ),
       );
     }
     return Column(
@@ -1205,7 +1208,7 @@ class _JsonImportBodyState extends State<_JsonImportBody> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'each entry: day · period · subject — optional: time · teacher · room.',
+              'each entry: day, period and subject; optional: time, teacher and room.',
               style: Theme.of(context).textTheme.labelSmall,
             ),
             SemGhostButton(

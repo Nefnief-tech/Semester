@@ -179,7 +179,7 @@ class _DocumentsTabState extends State<DocumentsTab> {
       } on ApiException catch (e) {
         setState(() => _error = e.message);
       } catch (e) {
-        setState(() => _error = 'Upload failed — is the server reachable?');
+        setState(() => _error = 'Upload failed. Is the server reachable?');
       } finally {
         setState(() => _uploading = _uploading.where((n) => n != file.name).toList());
       }
@@ -251,7 +251,7 @@ class _DocumentsTabState extends State<DocumentsTab> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  'Not signed in — uploads need an account, so your files stay private. '
+                  'Not signed in. Uploads need an account, so your files stay private. '
                   'Open Account in the top bar.',
                   style: Theme.of(context).textTheme.bodySmall!.copyWith(color: sem.inkSoft),
                 ),
@@ -270,7 +270,7 @@ class _DocumentsTabState extends State<DocumentsTab> {
               const EmptyState(
                 title: 'No documents yet',
                 hint:
-                    'Upload lecture notes, slides or chapters — they become the context for flashcards and chat.',
+                    'Upload lecture notes, slides or chapters. They become the context for flashcards and chat.',
               )
             else ...[
               Text(
@@ -466,7 +466,7 @@ class _FlashcardsTabState extends State<FlashcardsTab> {
                 title: 'No decks yet',
                 hint: room.selectedDocIds.isNotEmpty
                     ? 'Turn your selected documents into a deck of flashcards.'
-                    : 'Upload material first and tick it as AI context — then generate your deck.',
+                    : 'Upload material first and tick it as AI context. Then generate your deck.',
                 action: SemPrimaryButton(
                   onPressed: _generating || room.selectedDocIds.isEmpty ? null : _generate,
                   child: _generating
@@ -822,8 +822,8 @@ class _ChatTabState extends State<ChatTab> {
                             const SizedBox(height: 4),
                             Text(
                               contextDocs.isNotEmpty
-                                  ? 'Questions about ${contextDocs.first.name}${contextDocs.length > 1 ? ' and ${contextDocs.length - 1} more selected documents' : ''} — answers cite their sources.'
-                                  : 'No documents selected — the assistant will answer from general knowledge. Tick some documents in the Documents tab to ground it.',
+                                  ? 'Questions about ${contextDocs.first.name}${contextDocs.length > 1 ? ' and ${contextDocs.length - 1} more selected documents' : ''}. Answers cite their sources.'
+                                  : 'No documents selected. The assistant will answer from general knowledge. Tick some documents in the Documents tab to ground it.',
                               textAlign: TextAlign.center,
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
@@ -1112,7 +1112,7 @@ class _SetupNotice extends StatelessWidget {
               const SizedBox(height: 10),
               Text(
                 'Add an API key to the server .env.local to unlock this feature. Any OpenAI-compatible '
-                'provider works — Z.ai, DeepSeek, OpenAI, OpenRouter or a local Ollama.',
+                'provider works. Z.ai, DeepSeek, OpenAI, OpenRouter or a local Ollama.',
                 style: Theme.of(context).textTheme.bodyMedium!.copyWith(color: sem.inkSoft, height: 1.5),
               ),
               const SizedBox(height: 10),

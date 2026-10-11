@@ -44,7 +44,7 @@ class GradesPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Punkte system (0–15) · weighted averages',
+                    'Punkte system (0-15), weighted averages',
                     style: Theme.of(context).textTheme.labelMedium!.copyWith(fontSize: 12),
                   ),
                   const SizedBox(height: 8),
@@ -60,7 +60,7 @@ class GradesPage extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Text(
-                              overall == null ? '—' : formatPoints(overall),
+                              overall == null ? '·' : formatPoints(overall),
                               style: Theme.of(context).textTheme.displayLarge!.copyWith(fontSize: 44),
                             ),
                             if (overall != null) ...[
@@ -161,7 +161,7 @@ class PointsTableCard extends StatelessWidget {
             style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w600),
           ),
           subtitle: Text(
-            '0–15 translated to 6–1 with +/−',
+            '0-15 translated to 6-1 with + and minus steps',
             style: Theme.of(context).textTheme.labelSmall,
           ),
           children: [
@@ -206,7 +206,7 @@ class PointsTableCard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              'every whole grade spans 3 points: 3 · 2 · 1 = 5+ · 5 · 5− — 4 points (4−) still passes, 3 points (5+) does not.',
+              'every whole grade spans 3 points (5+ down to 5-). 4 points (4-) still pass, 3 points (5+) do not.',
               style: Theme.of(context).textTheme.labelSmall!.copyWith(height: 1.6),
             ),
           ],
@@ -294,7 +294,7 @@ class SubjectCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      avg == null ? '—' : formatPoints(avg),
+                      avg == null ? '·' : formatPoints(avg),
                       style: Theme.of(context).textTheme.displayMedium!.copyWith(fontSize: 34),
                     ),
                     if (avg != null) ...[
@@ -640,7 +640,7 @@ class _GradeFormSheetState extends State<GradeFormSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SemLabel('Punkte (0–15)'),
+                  const SemLabel('Punkte (0-15)'),
                   TextField(
                     controller: _points,
                     keyboardType: TextInputType.number,
@@ -648,7 +648,7 @@ class _GradeFormSheetState extends State<GradeFormSheet> {
                       setState(() {});
                       _commitSoon();
                     },
-                    decoration: const InputDecoration(hintText: '0–15'),
+                    decoration: const InputDecoration(hintText: '0-15'),
                   ),
                 ],
               ),
@@ -712,7 +712,7 @@ class _GradeFormSheetState extends State<GradeFormSheet> {
                 Icon(Icons.calendar_today_outlined, size: 14, color: sem.inkSoft),
                 const SizedBox(width: 8),
                 Text(
-                  _date ?? '—',
+                  _date ?? 'Set date',
                   style: Theme.of(context)
                       .textTheme
                       .labelMedium!

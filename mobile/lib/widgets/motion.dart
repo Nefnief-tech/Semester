@@ -63,3 +63,61 @@ class _PressableState extends State<Pressable> {
     );
   }
 }
+
+/// one-shot entrance for sections and rows: fades in while sliding up,
+/// delayed by the item's index so a column reveals top-down. Plays once —
+/// rebuilds never re-trigger it — and collapses to instant under the
+/// system's reduce-motion setting.
+class StaggerIn extends StatefulWidget {
+  final int index;
+  final Widget child;
+  const StaggerIn({super.key, required this.index, required this.child});
+
+  @override
+  State<StaggerIn> createState() => _StaggerInState();
+}
+
+class _StaggerInState extends State<StaggerIn>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: kMotionBase,
+  );
+  bool _armed = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // the reduce-motion lookup belongs here, not initState — inherited
+    // dependencies may only be registered from didChangeDependencies on
+    if (_armed) return;
+    _armed = true;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.value = 1;
+    } else {
+      final delay = Duration(milliseconds: widget.index.clamp(0, 8) * 40);
+      Future.delayed(delay, () {
+        if (mounted) _controller.forward();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final curved = CurvedAnimation(parent: _controller, curve: kMotionCurve);
+    return FadeTransition(
+      opacity: curved,
+      child: SlideTransition(
+        position: Tween(begin: const Offset(0, 0.02), end: Offset.zero)
+            .animate(curved),
+        child: widget.child,
+      ),
+    );
+  }
+}

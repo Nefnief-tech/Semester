@@ -473,7 +473,7 @@ Future<void> _restUpsertRow({
   if (jwt == null) throw Exception('row upsert without JWT (signed out?)');
   http.Response res = await _putRow(jwt, table, rowId, row, userId);
   if (res.statusCode == 401) {
-    invalidateJwtCache(); // cached token expired — mint a fresh one once
+    invalidateJwtCache(); // cached token expired. Mint a fresh one once
     final fresh = await getJwt();
     if (fresh != null) res = await _putRow(fresh, table, rowId, row, userId);
   }
@@ -742,7 +742,7 @@ Future<void> _runReconcile(AuthUser user) async {
 
     if (failed.isNotEmpty) {
       auth.setSyncError(
-        'sync incomplete — ${failed.join(", ")} could not be synced; check your connection and tap Sync now',
+        'sync incomplete. ${failed.join(", ")} could not be synced; check your connection and tap Sync now',
       );
       _scheduleRetryLoop();
       return;

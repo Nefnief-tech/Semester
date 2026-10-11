@@ -125,6 +125,14 @@ const kFraunces = 'Fraunces';
 const kInstrumentSans = 'Instrument Sans';
 const kIbmPlexMono = 'IBM Plex Mono';
 
+/// locked corner-radius scale — every surface picks from these five:
+/// cards 18 · tiles & controls 12 · dialogs 20 · sheets 24 · pills full
+const kRadiusCard = 18.0;
+const kRadiusTile = 12.0;
+const kRadiusControl = 12.0;
+const kRadiusDialog = 20.0;
+const kRadiusSheet = 24.0;
+
 TextStyle _display({double? fontSize, FontWeight? fontWeight, double? height, Color? color, FontStyle? fontStyle}) =>
     TextStyle(
       fontFamily: kFraunces,
@@ -213,24 +221,50 @@ ThemeData buildSemesterTheme({required bool dark}) {
       hintStyle: _body(fontSize: 14, color: c.inkSoft.withValues(alpha: 0.6)),
       labelStyle: _body(fontSize: 14, color: c.inkSoft),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(kRadiusControl),
         borderSide: BorderSide(color: c.line),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(kRadiusControl),
         borderSide: BorderSide(color: c.line),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(kRadiusControl),
         borderSide: BorderSide(color: c.accent, width: 2),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(kRadiusControl),
         borderSide: BorderSide(color: c.marker),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(kRadiusControl),
         borderSide: BorderSide(color: c.marker, width: 2),
+      ),
+    ),
+    datePickerTheme: DatePickerThemeData(
+      backgroundColor: c.card,
+      surfaceTintColor: Colors.transparent,
+      headerBackgroundColor: c.paperDeep,
+      headerForegroundColor: c.ink,
+      dayShape: const WidgetStatePropertyAll(CircleBorder()),
+      todayBackgroundColor: WidgetStateProperty.resolveWith(
+        (states) => states.contains(WidgetState.selected) ? c.accent : null,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(kRadiusDialog),
+        side: BorderSide(color: c.line),
+      ),
+    ),
+    timePickerTheme: TimePickerThemeData(
+      backgroundColor: c.card,
+      dialBackgroundColor: c.paperDeep,
+      hourMinuteColor: c.paperDeep,
+      hourMinuteTextColor: c.ink,
+      dayPeriodColor: c.paperDeep,
+      dayPeriodTextColor: c.ink,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(kRadiusDialog),
+        side: BorderSide(color: c.line),
       ),
     ),
     dividerTheme: DividerThemeData(color: c.line, thickness: 1, space: 1),
@@ -238,7 +272,7 @@ ThemeData buildSemesterTheme({required bool dark}) {
       backgroundColor: c.card,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(kRadiusDialog),
         side: BorderSide(color: c.line),
       ),
       titleTextStyle: _display(fontSize: 18, fontWeight: FontWeight.w600, color: c.ink),
@@ -249,14 +283,15 @@ ThemeData buildSemesterTheme({required bool dark}) {
       showDragHandle: true,
       dragHandleColor: c.line,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(kRadiusSheet)),
       ),
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: c.ink,
       contentTextStyle: _body(fontSize: 14, color: c.paper),
+      actionTextColor: c.paper,
       behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kRadiusTile)),
     ),
     checkboxTheme: CheckboxThemeData(
       fillColor: WidgetStateProperty.resolveWith(
@@ -280,11 +315,11 @@ ThemeData buildSemesterTheme({required bool dark}) {
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(kRadiusControl),
           borderSide: BorderSide(color: c.line),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(kRadiusControl),
           borderSide: BorderSide(color: c.line),
         ),
       ),

@@ -24,12 +24,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
     (
       Icons.auto_awesome_outlined,
       'Welcome to Semester.',
-      'Your study desk: tasks, homework, timetable, grades and the school portal — one calm place instead of five apps.',
+      'Your study desk: tasks, homework, timetable, grades and the school portal. One calm place instead of five apps.',
     ),
     (
       Icons.table_chart_outlined,
       'Plan your week.',
-      'Paste your timetable as JSON once — Semester builds the grid, marks substitutions and tells you what\'s now and up next.',
+      'Paste your timetable as JSON once. Semester builds the grid, marks substitutions and tells you what\'s now and up next.',
     ),
     (
       Icons.cloud_sync_outlined,
@@ -63,18 +63,36 @@ class _OnboardingPageState extends State<OnboardingPage> {
         child: PlannerGrid(
           child: Column(
             children: [
-              // skip
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () => widget.onDone(),
-                  child: Text(
-                    'Skip',
-                    style: Theme.of(context)
-                        .textTheme
-                        .labelSmall!
-                        .copyWith(color: sem.inkSoft),
-                  ),
+              // wordmark + skip
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 8, 0),
+                child: Row(
+                  children: [
+                    RichText(
+                      text: TextSpan(
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineSmall!
+                            .copyWith(fontSize: 20),
+                        children: [
+                          const TextSpan(text: 'Semester'),
+                          TextSpan(
+                              text: '.', style: TextStyle(color: sem.accent)),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: () => widget.onDone(),
+                      child: Text(
+                        'Skip',
+                        style: Theme.of(context)
+                            .textTheme
+                            .labelSmall!
+                            .copyWith(color: sem.inkSoft),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               // slides
@@ -150,6 +168,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                 child: SizedBox(
                   width: double.infinity,
+                  height: 48,
                   child: SemPrimaryButton(
                     onPressed: _next,
                     child: Text(

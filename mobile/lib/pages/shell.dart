@@ -278,25 +278,32 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
           ],
         ),
       ),
-      bottomNavigationBar: ClipRRect(
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(18),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: sem.paper.withValues(alpha: 0.97),
+          border: Border(top: BorderSide(color: sem.line)),
         ),
-        child: Container(
-          decoration: BoxDecoration(
-            color: sem.paper.withValues(alpha: 0.97),
-            border: Border(top: BorderSide(color: sem.line)),
-          ),
-          child: SafeArea(
-            top: false,
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
             child: Row(
               children: [
                 for (var i = 0; i < _tabs.length; i++)
                   Expanded(
                     child: InkWell(
                       onTap: () => _goTab(i),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                      borderRadius: BorderRadius.circular(kRadiusTile),
+                      child: AnimatedContainer(
+                        duration: kMotionBase,
+                        curve: kMotionCurve,
+                        margin: const EdgeInsets.symmetric(horizontal: 2),
+                        padding: const EdgeInsets.symmetric(vertical: 7),
+                        decoration: BoxDecoration(
+                          color:
+                              i == _currentTab ? sem.accentSoft : Colors.transparent,
+                          borderRadius: BorderRadius.circular(kRadiusTile),
+                        ),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -384,6 +391,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                       ),
                     ),
                   ),
+                  _sideSectionLabel(context, 'Menu'),
                   for (var i = 0; i < _tabs.length - 1; i++)
                     _sideItem(
                       context,
@@ -395,12 +403,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                       selected: page == null && effectiveTab == i,
                       onTap: () => _goTab(i),
                     ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 6),
-                    child: Container(
-                        height: 1, color: sem.line),
-                  ),
+                  _sideSectionLabel(context, 'Library'),
                   for (final d in _destinations)
                     _sideItem(
                       context,
@@ -509,6 +512,25 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     }
   }
 
+  /// mono small-caps group label for the sidebar (Menu / Library)
+  Widget _sideSectionLabel(BuildContext context, String text) {
+    final sem = context.sem;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(26, 14, 16, 6),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          text.toUpperCase(),
+          style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                fontSize: 9,
+                letterSpacing: 1.6,
+                color: sem.inkSoft.withValues(alpha: 0.8),
+              ),
+        ),
+      ),
+    );
+  }
+
   Widget _sideItem(
     BuildContext context,
     SemColors sem, {
@@ -558,7 +580,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
         border: Border(bottom: BorderSide(color: sem.line)),
       ),
       child: SizedBox(
-        height: 48,
+        height: 52,
         child: Row(
           children: [
             IconButton(
@@ -571,7 +593,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                 style: Theme.of(context)
                     .textTheme
                     .headlineSmall!
-                    .copyWith(fontSize: 18),
+                    .copyWith(fontSize: 20),
               ),
             ),
             IconButton(

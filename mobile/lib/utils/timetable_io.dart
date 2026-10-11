@@ -57,7 +57,7 @@ ParseResult parseTimetable(String raw) {
   try {
     data = jsonDecode(raw);
   } on FormatException {
-    throw FormatException("That isn't valid JSON — check for missing commas or quotes.");
+    throw FormatException("That isn't valid JSON. Check for missing commas or quotes.");
   }
 
   final warnings = <String>[];
@@ -71,13 +71,13 @@ ParseResult parseTimetable(String raw) {
       } else if (item is Map) {
         rows.add(MapEntry(item['day'], Map<String, dynamic>.from(item)));
       } else {
-        warnings.add('Row ${i + 1} skipped — not an object.');
+        warnings.add('Row ${i + 1} skipped. Not an object.');
       }
     }
   } else if (data is Map) {
     data.forEach((key, value) {
       if (value is! List) {
-        warnings.add('Skipped "$key" — the value isn\'t a list.');
+        warnings.add('Skipped "$key". The value isn\'t a list.');
         return;
       }
       for (final item in value) {
@@ -94,12 +94,12 @@ ParseResult parseTimetable(String raw) {
     final item = rows[i].value;
     final subject = _pick(item, ['subject', 'name', 'fach', 'lesson']);
     if (subject == null) {
-      warnings.add('Row ${i + 1}: no subject found — skipped.');
+      warnings.add('Row ${i + 1}: no subject found. Skipped.');
       continue;
     }
     final day = _normalizeDay(rawDay ?? _pick(item, ['day', 'tag']));
     if (day == null) {
-      warnings.add('Row ${i + 1}: unknown day "${rawDay ?? ""}" — skipped.');
+      warnings.add('Row ${i + 1}: unknown day "${rawDay ?? ""}". Skipped.');
       continue;
     }
     final time = _pick(item, ['time', 'zeit', 'times', 'slot']);
@@ -117,7 +117,7 @@ ParseResult parseTimetable(String raw) {
 
   if (entries.isEmpty) {
     throw FormatException(
-        'No lessons found — each entry needs at least a day and a subject.');
+        'No lessons found. Each entry needs at least a day and a subject.');
   }
 
   entries.sort((a, b) {

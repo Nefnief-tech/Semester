@@ -20,7 +20,7 @@ class SettingsPage extends StatelessWidget {
         children: [
           PageHeader(
             title: 'Settings',
-            subtitle: 'account · two-factor · sync · push',
+            subtitle: 'Account, two-factor, sync, push',
           ),
           SemCard(
             padding: const EdgeInsets.all(16),
@@ -35,7 +35,7 @@ class SettingsPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Pin the Semester widgets to your home screen — they follow your data automatically.',
+                  'Pin the Semester widgets to your home screen. They follow your data automatically.',
                   style: Theme.of(context)
                       .textTheme
                       .labelSmall!

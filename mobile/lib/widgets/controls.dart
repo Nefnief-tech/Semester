@@ -26,7 +26,7 @@ class SemPrimaryButton extends StatelessWidget {
         disabledForegroundColor: sem.paper.withValues(alpha: 0.8),
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kRadiusControl)),
         textStyle: Theme.of(context)
             .textTheme
             .bodyMedium!
@@ -61,7 +61,7 @@ class SemGhostButton extends StatelessWidget {
         disabledForegroundColor: sem.inkSoft,
         side: BorderSide(color: border ?? sem.line),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kRadiusControl)),
         textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(fontWeight: FontWeight.w400),
       ),
       child: child,
@@ -121,7 +121,7 @@ class SegToggle<T> extends StatelessWidget {
       decoration: BoxDecoration(
         color: sem.card,
         border: Border.all(color: sem.line),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(kRadiusControl),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -152,6 +152,42 @@ class SegToggle<T> extends StatelessWidget {
   }
 }
 
+
+/* ---------------- list section (rows grouped in one card) ---------------- */
+
+/// groups content rows into a single bordered card with hairline dividers
+/// between them — the web app's divide-y list treatment. Rows must not
+/// carry their own card chrome; they sit edge-to-edge inside the section.
+class ListSection extends StatelessWidget {
+  final List<Widget> children;
+  final Color? borderColor;
+  const ListSection({super.key, required this.children, this.borderColor});
+
+  @override
+  Widget build(BuildContext context) {
+    final sem = context.sem;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(kRadiusCard),
+      child: Container(
+        decoration: BoxDecoration(
+          color: sem.card,
+          border: Border.all(color: borderColor ?? sem.line),
+          borderRadius: BorderRadius.circular(kRadiusCard),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < children.length; i++) ...[
+              if (i > 0) Divider(height: 1, thickness: 1, color: sem.line),
+              children[i],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /* ---------------- cards & labels ---------------- */
 
 class SemCard extends StatelessWidget {
@@ -160,6 +196,7 @@ class SemCard extends StatelessWidget {
   final Color? color;
   final Color? borderColor;
   final VoidCallback? onTap;
+  final double radius;
   const SemCard({
     super.key,
     required this.child,
@@ -167,6 +204,7 @@ class SemCard extends StatelessWidget {
     this.color,
     this.borderColor,
     this.onTap,
+    this.radius = kRadiusCard,
   });
 
   @override
@@ -177,7 +215,7 @@ class SemCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: color ?? sem.card,
         border: Border.all(color: borderColor ?? sem.line),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(radius),
       ),
       child: child,
     );
@@ -271,7 +309,7 @@ Future<T?> showSemSheet<T>({
         return Dialog(
           backgroundColor: theme.colorScheme.surfaceContainerLow,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(kRadiusDialog),
             side: BorderSide(color: sem.line),
           ),
           insetPadding: const EdgeInsets.symmetric(
@@ -321,7 +359,7 @@ Future<T?> showSemSheet<T>({
     isDismissible: isDismissible,
     enableDrag: isDismissible,
     shape: RoundedRectangleBorder(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(kRadiusSheet)),
       side: BorderSide(color: sem.line),
     ),
     builder: (sheetContext) {
