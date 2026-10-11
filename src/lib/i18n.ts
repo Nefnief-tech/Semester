@@ -572,6 +572,47 @@ const de: Record<string, string> = {
   "0-15 translated to 6-1 with +/-": "0–15 übersetzt in 6–1 mit +/−",
   "every whole grade spans 3 points: 3 · 2 · 1 = 5+ · 5 · 5-, 4 points (4-) still passes, 3 points (5+) does not.":
     "jede ganze Note spannt 3 Punkte auf: 3 · 2 · 1 = 5+ · 5 · 5−. Mit 4 Punkten (4−) bestehst du noch, mit 3 Punkten (5+) nicht mehr.",
+
+  /* appearance settings */
+  Appearance: "Erscheinungsbild",
+  "Color mode, design language and accent — applied instantly, stays on this device.":
+    "Farbmodus, Designsprache und Akzentfarbe — wirkt sofort, bleibt auf diesem Gerät.",
+  "Color mode": "Farbmodus",
+  Light: "Hell",
+  Dark: "Dunkel",
+  "Design language": "Designsprache",
+  "Warm paper, serif headlines, soft pill buttons":
+    "Warmes Papier, Serifen-Titel, weiche runde Buttons",
+  "Cool and reduced — sans-serif, quiet surfaces":
+    "Kühl und reduziert — Sans-Schrift, ruhige Flächen",
+  "High-contrast ink, sharp edges, editorial":
+    "Kontrastreiche Tinte, harte Kanten, editorial",
+  "Everything in monospace, like a terminal": "Alles in Monospace, wie ein Terminal",
+  "Accent color": "Akzentfarbe",
+  Green: "Grün",
+  Blue: "Blau",
+  Brick: "Ziegel",
+  Violet: "Violett",
+  Teal: "Petrol",
+  Gold: "Gold",
+  "design and accent apply to the whole app - the landing page keeps its own look.":
+    "Design und Akzentfarbe gelten für die ganze App - die Landingpage behält ihren eigenen Look.",
+  Corners: "Ecken",
+  Sharp: "Scharf",
+  Normal: "Normal",
+  Rounded: "Rund",
+  Motion: "Animationen",
+  Lively: "Lebendig",
+  Quiet: "Ruhig",
+  Background: "Hintergrund",
+  Dots: "Punkte",
+  Lines: "Linien",
+  None: "Keine",
+  "Sync appearance with your account": "Erscheinungsbild mit dem Konto synchronisieren",
+  "Design, accent, corners, background and motion are stored in your account preferences and pulled on every sign-in.":
+    "Design, Akzentfarbe, Ecken, Hintergrund und Animationen liegen in deinen Konto-Einstellungen und werden bei jeder Anmeldung geladen.",
+  "Sign in to keep your look in sync across devices.":
+    "Melde dich an, um dein Aussehen auf allen Geräten zu synchronisieren.",
 };
 
 interface LangState {

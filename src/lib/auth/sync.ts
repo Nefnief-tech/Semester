@@ -19,6 +19,7 @@ import { useTimetableStore, timetableRowId } from "@/lib/store/timetable";
 import { useStudyRoomStore } from "@/lib/store/studyroom";
 import { usePortalStore, portalSubRowId, portalCourseRowId } from "@/lib/store/portal";
 import { hashId } from "@/lib/utils";
+import { reconcileAppearance, subscribeAppearanceSync } from "./appearance-sync";
 import type {
   Deck,
   GradeEntry,
@@ -969,6 +970,10 @@ export async function initSync() {
   }
   setAuth(user, "signed-in");
   subscribeStores();
+  subscribeAppearanceSync();
+  // the look applies before the row round-trip — a slow reconcile must
+  // never delay it (appearance sync fails quietly on its own)
+  void reconcileAppearance();
   startRealtime(user);
   await reconcile(user);
 }
@@ -1037,6 +1042,8 @@ function isMfaFactorsError(err: unknown): boolean {
 async function finalizeSignIn(user: AuthUser) {
   useAuthStore.getState().setAuth(user, "signed-in");
   subscribeStores();
+  subscribeAppearanceSync();
+  void reconcileAppearance();
   startRealtime(user);
   await reconcile(user);
 }

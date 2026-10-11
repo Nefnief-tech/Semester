@@ -3,6 +3,15 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { gatedJSONStorage } from "../storage-guard";
+import {
+  DEFAULT_ACCENT,
+  DEFAULT_DESIGN,
+  type AccentId,
+  type Corners,
+  type DesignId,
+  type GridPattern,
+  type MotionPref,
+} from "../appearance";
 
 /**
  * Device-level preferences that are not user data and never sync (like theme
@@ -45,9 +54,27 @@ interface SettingsState {
   bundesland: string;
   schoolYear: string;
   reading: ReadingPrefs;
+  /** design language (Papier/Klar/Tinte/Konsole) — see lib/appearance.ts */
+  design: DesignId;
+  /** accent color layered on top of any design language */
+  accent: AccentId;
+  /** corner preference — "normal" follows the design language */
+  corners: Corners;
+  /** background pattern of the content canvas */
+  grid: GridPattern;
+  /** "quiet" = no entrance animations, no transitions */
+  motion: MotionPref;
+  /** opt-in: mirror the appearance slice into the Appwrite account prefs */
+  syncAppearance: boolean;
   setBundesland: (code: string) => void;
   setSchoolYear: (label: string) => void;
   setReading: (patch: Partial<ReadingPrefs>) => void;
+  setDesign: (design: DesignId) => void;
+  setAccent: (accent: AccentId) => void;
+  setCorners: (corners: Corners) => void;
+  setGrid: (grid: GridPattern) => void;
+  setMotion: (motion: MotionPref) => void;
+  setSyncAppearance: (sync: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -56,9 +83,21 @@ export const useSettingsStore = create<SettingsState>()(
       bundesland: "",
       schoolYear: schoolYearFor(),
       reading: DEFAULT_READING,
+      design: DEFAULT_DESIGN,
+      accent: DEFAULT_ACCENT,
+      corners: "normal",
+      grid: "dots",
+      motion: "normal",
+      syncAppearance: false,
       setBundesland: (bundesland) => set({ bundesland }),
       setSchoolYear: (schoolYear) => set({ schoolYear: schoolYear.trim() }),
       setReading: (patch) => set((s) => ({ reading: { ...s.reading, ...patch } })),
+      setDesign: (design) => set({ design }),
+      setAccent: (accent) => set({ accent }),
+      setCorners: (corners) => set({ corners }),
+      setGrid: (grid) => set({ grid }),
+      setMotion: (motion) => set({ motion }),
+      setSyncAppearance: (syncAppearance) => set({ syncAppearance }),
     }),
     { storage: gatedJSONStorage(), name: "semester.settings", version: 1 },
   ),

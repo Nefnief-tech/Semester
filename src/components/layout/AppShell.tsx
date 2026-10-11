@@ -26,6 +26,7 @@ import { useAuthStore } from "@/lib/store/auth";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import LangToggle from "@/components/ui/LangToggle";
 import CommandPalette from "@/components/ui/CommandPalette";
+import AppearanceSync from "@/components/ui/AppearanceSync";
 
 const NAV: Array<{ href: Route; label: string; icon: LucideIcon }> = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
@@ -89,6 +90,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-dvh">
+      <AppearanceSync />
       <CommandPalette />
 
       {/* desktop sidebar */}
@@ -236,10 +238,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      {/* content on a faint planner grid */}
+      {/* content on the planner canvas — pattern follows [data-grid] and
+          spans the full width of the content area, edge to edge */}
       <main className="md:pl-60">
-        <div className="mx-auto max-w-6xl px-4 pt-6 pb-28 md:px-10 md:pt-10 md:pb-16">
-          <div className="bg-[radial-gradient(var(--color-grid)_1px,transparent_1.5px)] [background-size:22px_22px]">
+        <div className="planner-grid min-h-dvh">
+          <div className="mx-auto max-w-6xl px-4 pt-6 pb-28 md:px-10 md:pt-10 md:pb-16">
             {children}
           </div>
         </div>
