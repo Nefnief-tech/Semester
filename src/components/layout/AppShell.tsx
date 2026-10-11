@@ -238,10 +238,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      {/* content on a faint planner grid */}
+      {/* content on the planner canvas — pattern follows [data-grid] */}
       <main className="md:pl-60">
         <div className="mx-auto max-w-6xl px-4 pt-6 pb-28 md:px-10 md:pt-10 md:pb-16">
-          <div className="bg-[radial-gradient(var(--color-grid)_1px,transparent_1.5px)] [background-size:22px_22px]">
+          <div className="planner-grid">
             {children}
           </div>
         </div>

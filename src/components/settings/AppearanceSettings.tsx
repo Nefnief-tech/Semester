@@ -1,25 +1,47 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { Check, Moon, Palette, Sun } from "lucide-react";
-import { ACCENTS, DESIGNS, isDarkMode, onModeChange, setDarkMode } from "@/lib/appearance";
+import { Check, Moon, Palette, Sun, type LucideIcon } from "lucide-react";
+import {
+  ACCENTS,
+  DESIGNS,
+  isDarkMode,
+  onModeChange,
+  setDarkMode,
+  type Corners,
+  type GridPattern,
+  type MotionPref,
+} from "@/lib/appearance";
 import { useSettingsStore } from "@/lib/store/settings";
+import { useAuthStore } from "@/lib/store/auth";
+import { pushAppearance } from "@/lib/auth/appearance-sync";
 import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 /**
- * Appearance settings on the account page: color mode, design language and
- * accent color. Design + accent live in the settings store (device-level,
- * like the Bundesland) and reach the CSS as data attributes via
- * AppearanceSync; mode keeps the pre-paint `.dark` mechanism.
+ * Appearance settings on the account page: color mode, design language,
+ * accent, corners, background pattern and motion. Everything lives in the
+ * settings store (device-level, like the Bundesland) and reaches the CSS
+ * as data attributes via AppearanceSync; mode keeps the pre-paint `.dark`
+ * mechanism. With syncAppearance on, the look mirrors into the Appwrite
+ * account prefs (see lib/auth/appearance-sync.ts).
  */
 export default function AppearanceSettings() {
   const t = useT();
   const design = useSettingsStore((s) => s.design);
   const accent = useSettingsStore((s) => s.accent);
+  const corners = useSettingsStore((s) => s.corners);
+  const grid = useSettingsStore((s) => s.grid);
+  const motion = useSettingsStore((s) => s.motion);
+  const syncAppearance = useSettingsStore((s) => s.syncAppearance);
   const setDesign = useSettingsStore((s) => s.setDesign);
   const setAccent = useSettingsStore((s) => s.setAccent);
+  const setCorners = useSettingsStore((s) => s.setCorners);
+  const setGrid = useSettingsStore((s) => s.setGrid);
+  const setMotion = useSettingsStore((s) => s.setMotion);
+  const setSyncAppearance = useSettingsStore((s) => s.setSyncAppearance);
 
+  const signedIn = useAuthStore((s) => s.status === "signed-in");
   const dark = useSyncExternalStore(onModeChange, isDarkMode, () => false);
 
   const accentColor = ACCENTS.find((a) => a.id === accent)?.light ?? ACCENTS[0].light;
@@ -33,29 +55,15 @@ export default function AppearanceSettings() {
         {t("Color mode, design language and accent — applied instantly, stays on this device.")}
       </p>
 
-      {/* ---------- color mode ---------- */}
-      <span className="label mt-4">{t("Color mode")}</span>
-      <div className="mt-1 grid grid-cols-2 gap-1 border border-line bg-paper-deep/60 p-1" style={{ borderRadius: "var(--radius-field)" }}>
-        {[
-          { active: !dark, label: t("Light"), icon: Sun, set: () => setDarkMode(false) },
-          { active: dark, label: t("Dark"), icon: Moon, set: () => setDarkMode(true) },
-        ].map(({ active, label, icon: Icon, set }) => (
-          <button
-            key={label}
-            onClick={set}
-            aria-pressed={active}
-            className={cn(
-              "flex cursor-pointer items-center justify-center gap-1.5 px-3 py-1.5 text-xs transition-colors",
-              active
-                ? "bg-card text-ink shadow-sm"
-                : "text-ink-soft hover:text-ink",
-            )}
-            style={{ borderRadius: "calc(var(--radius-field) - 3px)" }}
-          >
-            <Icon className="size-3.5" /> {label}
-          </button>
-        ))}
-      </div>
+      <Segmented
+        label={t("Color mode")}
+        value={dark ? "dark" : "light"}
+        onChange={(v) => setDarkMode(v === "dark")}
+        options={[
+          { value: "light", label: t("Light"), icon: Sun },
+          { value: "dark", label: t("Dark"), icon: Moon },
+        ]}
+      />
 
       {/* ---------- design language ---------- */}
       <span className="label mt-5">{t("Design language")}</span>
@@ -138,9 +146,113 @@ export default function AppearanceSettings() {
         })}
       </div>
 
+      <Segmented<Corners>
+        label={t("Corners")}
+        value={corners}
+        onChange={setCorners}
+        options={[
+          { value: "sharp", label: t("Sharp") },
+          { value: "normal", label: t("Normal") },
+          { value: "round", label: t("Rounded") },
+        ]}
+      />
+
+      <Segmented<GridPattern>
+        label={t("Background")}
+        value={grid}
+        onChange={setGrid}
+        options={[
+          { value: "dots", label: t("Dots") },
+          { value: "lines", label: t("Lines") },
+          { value: "none", label: t("None") },
+        ]}
+      />
+
+      <Segmented<MotionPref>
+        label={t("Motion")}
+        value={motion}
+        onChange={setMotion}
+        options={[
+          { value: "normal", label: t("Lively") },
+          { value: "quiet", label: t("Quiet") },
+        ]}
+      />
+
+      {/* ---------- opt-in account sync ---------- */}
+      <div className="mt-5 border-t border-line pt-4">
+        <label
+          className={cn(
+            "flex items-center gap-2.5 rounded-xl border border-line bg-paper px-3 py-2 text-sm",
+            signedIn ? "cursor-pointer" : "opacity-60",
+          )}
+        >
+          <input
+            type="checkbox"
+            checked={syncAppearance}
+            disabled={!signedIn}
+            onChange={(e) => {
+              setSyncAppearance(e.target.checked);
+              // the toggle is a promise in both directions: on → push the
+              // look up now, off → strip the blob from the account prefs;
+              // everyday changes ride the debounced subscriber
+              void pushAppearance().catch(() => {});
+            }}
+          />
+          <span className="flex-1">{t("Sync appearance with your account")}</span>
+        </label>
+        <p className="mt-2 font-mono text-[10px] leading-relaxed text-ink-soft">
+          {signedIn
+            ? t("Design, accent, corners, background and motion are stored in your account preferences and pulled on every sign-in.")
+            : t("Sign in to keep your look in sync across devices.")}
+        </p>
+      </div>
+
       <p className="mt-4 font-mono text-[10px] leading-relaxed text-ink-soft">
         {t("design and accent apply to the whole app - the landing page keeps its own look.")}
       </p>
     </section>
+  );
+}
+
+/* ---------------- segmented control ---------------- */
+
+function Segmented<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: T;
+  options: Array<{ value: T; label: string; icon?: LucideIcon }>;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <>
+      <span className="label mt-4">{label}</span>
+      <div
+        className="mt-1 grid gap-1 border border-line bg-paper-deep/60 p-1"
+        style={{ borderRadius: "var(--radius-field)", gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
+      >
+        {options.map((o) => {
+          const active = value === o.value;
+          const Icon = o.icon;
+          return (
+            <button
+              key={o.value}
+              onClick={() => onChange(o.value)}
+              aria-pressed={active}
+              className={cn(
+                "flex cursor-pointer items-center justify-center gap-1.5 px-2 py-1.5 text-xs transition-colors",
+                active ? "bg-card text-ink shadow-sm" : "text-ink-soft hover:text-ink",
+              )}
+              style={{ borderRadius: "calc(var(--radius-field) - 3px)" }}
+            >
+              {Icon && <Icon className="size-3.5" />} {o.label}
+            </button>
+          );
+        })}
+      </div>
+    </>
   );
 }

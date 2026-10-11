@@ -198,6 +198,43 @@
 .dark[data-accent="teal"] { --accent: #8ec7c0; --accent-soft: #1c2e2c; }
 .dark[data-accent="gold"] { --accent: #d9b95c; --accent-soft: #322a15; }
 
+/* ---------------- roundness preference ----------------
+   overrides the shape tokens of every design language; "normal"
+   (no attribute) keeps the language's own radii. Sits after the
+   design blocks so it wins the cascade at equal specificity. */
+
+[data-round="sharp"] {
+  --radius-card: 3px;
+  --radius-soft: 3px;
+  --radius-mid: 2px;
+  --radius-field: 3px;
+  --radius-pill: 4px;
+}
+
+[data-round="round"] {
+  --radius-card: 22px;
+  --radius-soft: 16px;
+  --radius-mid: 10px;
+  --radius-field: 12px;
+  --radius-pill: 999px;
+}
+
+/* ---------------- quiet motion ----------------
+   the user-level motion switch (independent of prefers-reduced-motion):
+   no entrance animations, no transitions — an instant, still UI */
+
+[data-motion="quiet"] .rise {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+[data-motion="quiet"] *,
+[data-motion="quiet"] *::before,
+[data-motion="quiet"] *::after {
+  transition-duration: 0.01ms !important;
+}
+
 @theme inline {
   --color-paper: var(--paper);
   --color-paper-deep: var(--paper-deep);
@@ -279,6 +316,22 @@ body {
      both sitting on one baseline */
   .section-link {
     @apply font-mono text-[11px] tracking-wide text-ink-soft uppercase transition-colors hover:text-ink;
+  }
+
+  /* the content canvas behind everything — pattern follows [data-grid]:
+     dots (default) · lines · none. --color-grid retunes per design/mode. */
+  .planner-grid {
+    background-image: radial-gradient(var(--color-grid) 1px, transparent 1.5px);
+    background-size: 22px 22px;
+  }
+  [data-grid="lines"] .planner-grid {
+    background-image:
+      linear-gradient(var(--color-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--color-grid) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+  [data-grid="none"] .planner-grid {
+    background-image: none;
   }
 }
 

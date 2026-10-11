@@ -8,6 +8,22 @@
 export type DesignId = "papier" | "klar" | "tinte" | "konsole";
 export type AccentId = "green" | "blue" | "brick" | "violet" | "teal" | "gold";
 
+/** corner preference — "normal" follows the design language, the others override */
+export type Corners = "normal" | "sharp" | "round";
+/** background pattern behind the content (the planner canvas) */
+export type GridPattern = "dots" | "lines" | "none";
+/** "quiet" kills entrance animations and transitions for a still UI */
+export type MotionPref = "normal" | "quiet";
+
+/** the appearance slice that travels with the account when sync is on */
+export interface AppearancePrefs {
+  design: DesignId;
+  accent: AccentId;
+  corners: Corners;
+  grid: GridPattern;
+  motion: MotionPref;
+}
+
 export interface DesignDef {
   id: DesignId;
   /** proper noun — intentionally not translated */
@@ -143,11 +159,20 @@ export function onModeChange(cb: () => void): () => void {
   return () => window.removeEventListener(MODE_CHANGED, cb);
 }
 
-/* ---------------- design + accent ---------------- */
+/* ---------------- design + accent + preferences ---------------- */
 
-/** mirrors the appearance settings onto <html> — the CSS keys off these */
-export function applyAppearance(design: DesignId, accent: AccentId): void {
+/** mirrors the appearance settings onto <html> — the CSS keys off these.
+ *  Non-default preferences only: absent attributes mean "as designed". */
+export function applyAppearance(prefs: AppearancePrefs): void {
   if (typeof document === "undefined") return;
-  document.documentElement.dataset.dl = design;
-  document.documentElement.dataset.accent = accent;
+  const el = document.documentElement;
+  const d = el.dataset;
+  d.dl = prefs.design;
+  d.accent = prefs.accent;
+  if (prefs.corners === "sharp" || prefs.corners === "round") d.round = prefs.corners;
+  else delete d.round;
+  if (prefs.grid === "lines" || prefs.grid === "none") d.grid = prefs.grid;
+  else delete d.grid;
+  if (prefs.motion === "quiet") d.motion = "quiet";
+  else delete d.motion;
 }

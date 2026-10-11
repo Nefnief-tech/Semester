@@ -597,6 +597,22 @@ const de: Record<string, string> = {
   Gold: "Gold",
   "design and accent apply to the whole app - the landing page keeps its own look.":
     "Design und Akzentfarbe gelten für die ganze App - die Landingpage behält ihren eigenen Look.",
+  Corners: "Ecken",
+  Sharp: "Scharf",
+  Normal: "Normal",
+  Rounded: "Rund",
+  Motion: "Animationen",
+  Lively: "Lebendig",
+  Quiet: "Ruhig",
+  Background: "Hintergrund",
+  Dots: "Punkte",
+  Lines: "Linien",
+  None: "Keine",
+  "Sync appearance with your account": "Erscheinungsbild mit dem Konto synchronisieren",
+  "Design, accent, corners, background and motion are stored in your account preferences and pulled on every sign-in.":
+    "Design, Akzentfarbe, Ecken, Hintergrund und Animationen liegen in deinen Konto-Einstellungen und werden bei jeder Anmeldung geladen.",
+  "Sign in to keep your look in sync across devices.":
+    "Melde dich an, um dein Aussehen auf allen Geräten zu synchronisieren.",
 };
 
 interface LangState {
