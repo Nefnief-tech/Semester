@@ -948,6 +948,7 @@ export default function LandingPage() {
           </a>
           <span>{t("Open source and self-hostable.")}</span>
             <div className="foot-right">
+              <Link href="/privacy">Datenschutz</Link>
               <Link href="/docs">Docs</Link>
               <a href="https://github.com/Nefnief-tech/study">GitHub</a>
               <a href="https://github.com/Nefnief-tech/study/releases">Releases</a>

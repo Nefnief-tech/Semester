@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { UserRound } from "lucide-react";
 import AccountPanel from "@/components/auth/AccountPanel";
 import SchoolSettings from "@/components/settings/SchoolSettings";
@@ -20,6 +21,12 @@ export default function AccountPage() {
       </div>
 
       <SchoolSettings />
+
+      <p className="mt-6 px-1 font-mono text-[10px] text-ink-soft">
+        <Link href="/privacy" className="underline decoration-line transition-colors hover:text-ink">
+          Datenschutz & Cookie-Einstellungen
+        </Link>
+      </p>
     </div>
   );
 }

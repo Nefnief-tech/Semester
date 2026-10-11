@@ -490,6 +490,14 @@ const de: Record<string, string> = {
   "your EPUB library - reading position, highlights and comments stay":
     "deine EPUB-Bibliothek - Leseposition, Markierungen und Kommentare bleiben gespeichert",
 
+  /* consent banner */
+  "This desk keeps your data on your device.":
+    "Dieser Tisch behält deine Daten auf deinem Gerät.",
+  "Tasks, grades and books are stored locally - no trackers, no ads, nothing leaves this device. External services load only after your ok.":
+    "Aufgaben, Noten und Bücher liegen lokal - keine Tracker, keine Werbung, nichts verlässt dieses Gerät. Externe Dienste laden erst nach deinem OK.",
+  "Only essential": "Nur Notwendiges",
+  "Allow everything": "Alles klar",
+
   /* EPUB reader */
   Reading: "Lesen",
   Library: "Bibliothek",

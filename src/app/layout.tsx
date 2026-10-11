@@ -1,25 +1,41 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Instrument_Sans, IBM_Plex_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import AppShell from "@/components/layout/AppShell";
 import ServiceWorkerRegister from "@/components/pwa/ServiceWorkerRegister";
+import CookieBanner from "@/components/consent/CookieBanner";
 import "./globals.css";
 
-const fraunces = Fraunces({
-  subsets: ["latin"],
+/**
+ * Fonts are self-hosted from src/fonts — nothing is loaded from Google or any
+ * other third party at runtime or build time (DSGVO). The CSS variables keep
+ * every existing font-* class working unchanged.
+ */
+const fraunces = localFont({
+  src: [
+    { path: "../fonts/fraunces-latin.woff2", style: "normal", weight: "100 900" },
+    { path: "../fonts/fraunces-italic-latin.woff2", style: "italic", weight: "100 900" },
+  ],
   variable: "--font-fraunces",
-  style: ["normal", "italic"],
-  axes: ["opsz"],
+  display: "swap",
 });
 
-const instrument = Instrument_Sans({
-  subsets: ["latin"],
+const instrument = localFont({
+  src: [
+    { path: "../fonts/instrument-latin.woff2", style: "normal", weight: "400 700" },
+    { path: "../fonts/instrument-italic-latin.woff2", style: "italic", weight: "400 700" },
+  ],
   variable: "--font-instrument",
+  display: "swap",
 });
 
-const plex = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
+const plex = localFont({
+  src: [
+    { path: "../fonts/plex-400.woff2", style: "normal", weight: "400" },
+    { path: "../fonts/plex-500.woff2", style: "normal", weight: "500" },
+    { path: "../fonts/plex-600.woff2", style: "normal", weight: "600" },
+  ],
   variable: "--font-plex",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -49,6 +65,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: themeInit }} />
         <AppShell>{children}</AppShell>
         <ServiceWorkerRegister />
+        <CookieBanner />
       </body>
     </html>
   );
