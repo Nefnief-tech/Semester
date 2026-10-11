@@ -50,8 +50,12 @@ export const viewport: Viewport = {
   ],
 };
 
-/** applies the stored (or system) theme before first paint to avoid a flash */
-const themeInit = `(function(){try{var s=localStorage.getItem("semester.theme");if(s==="dark"||(!s&&window.matchMedia("(prefers-color-scheme: dark)").matches)){document.documentElement.classList.add("dark")}}catch(e){}})()`;
+/**
+ * applies the stored appearance before first paint to avoid a flash:
+ * mode via the `.dark` class, design language + accent via data attributes
+ * mirrored out of the persisted settings blob (see lib/appearance.ts).
+ */
+const themeInit = `(function(){try{var s=localStorage.getItem("semester.theme");if(s==="dark"||(!s&&window.matchMedia("(prefers-color-scheme: dark)").matches)){document.documentElement.classList.add("dark")}var a=JSON.parse(localStorage.getItem("semester.settings")||"null");if(a&&a.state){if(a.state.design){document.documentElement.dataset.dl=a.state.design}if(a.state.accent){document.documentElement.dataset.accent=a.state.accent}}}catch(e){}})()`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

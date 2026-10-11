@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { gatedJSONStorage } from "../storage-guard";
+import { DEFAULT_ACCENT, DEFAULT_DESIGN, type AccentId, type DesignId } from "../appearance";
 
 /**
  * Device-level preferences that are not user data and never sync (like theme
@@ -45,9 +46,15 @@ interface SettingsState {
   bundesland: string;
   schoolYear: string;
   reading: ReadingPrefs;
+  /** design language (Papier/Klar/Tinte/Konsole) — see lib/appearance.ts */
+  design: DesignId;
+  /** accent color layered on top of any design language */
+  accent: AccentId;
   setBundesland: (code: string) => void;
   setSchoolYear: (label: string) => void;
   setReading: (patch: Partial<ReadingPrefs>) => void;
+  setDesign: (design: DesignId) => void;
+  setAccent: (accent: AccentId) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -56,9 +63,13 @@ export const useSettingsStore = create<SettingsState>()(
       bundesland: "",
       schoolYear: schoolYearFor(),
       reading: DEFAULT_READING,
+      design: DEFAULT_DESIGN,
+      accent: DEFAULT_ACCENT,
       setBundesland: (bundesland) => set({ bundesland }),
       setSchoolYear: (schoolYear) => set({ schoolYear: schoolYear.trim() }),
       setReading: (patch) => set((s) => ({ reading: { ...s.reading, ...patch } })),
+      setDesign: (design) => set({ design }),
+      setAccent: (accent) => set({ accent }),
     }),
     { storage: gatedJSONStorage(), name: "semester.settings", version: 1 },
   ),

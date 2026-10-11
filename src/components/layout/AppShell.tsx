@@ -26,6 +26,7 @@ import { useAuthStore } from "@/lib/store/auth";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import LangToggle from "@/components/ui/LangToggle";
 import CommandPalette from "@/components/ui/CommandPalette";
+import AppearanceSync from "@/components/ui/AppearanceSync";
 
 const NAV: Array<{ href: Route; label: string; icon: LucideIcon }> = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
@@ -89,6 +90,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-dvh">
+      <AppearanceSync />
       <CommandPalette />
 
       {/* desktop sidebar */}

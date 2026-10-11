@@ -2,8 +2,25 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* runtime palette — swapped by the `.dark` class on <html> (see ThemeToggle) */
+/**
+ * Appearance system — three independent axes, all set on <html> before first
+ * paint (see the inline script in layout.tsx, kept in sync by AppearanceSync):
+ *
+ *   1. Mode       `.dark` class                    — light / dark, as before
+ *   2. Design     `[data-dl="klar|tinte|konsole"]` — the design language:
+ *                  palette, shapes (--radius-*) and type (--dl-* font roles).
+ *                  No attribute = Papier, the original look.
+ *   3. Accent     `[data-accent="blue|brick|…"]`   — accent + accent-soft only,
+ *                  layered on top of any design language.
+ *
+ * Shape and type flow through runtime variables that the @theme block binds
+ * the Tailwind tokens to, so rounded-2xl / rounded-xl / rounded-lg and every
+ * font-display / font-sans / font-mono class follow the design language
+ * app-wide without touching a single component.
+ */
+
 :root {
+  /* Papier (default) · light */
   --paper: #f5f2ea;
   --paper-deep: #edeade;
   --card: #fdfcf8;
@@ -11,16 +28,31 @@
   --ink-soft: #756e60;
   --line: #e0dacb;
   --grid: #e8e3d5;
-  --accent: #31633f;
-  --accent-soft: #e2eadd;
   --marker: #c14b26;
   --info: #38618c;
   --amber: #8a6a10;
   --shadow-tint: 38, 34, 27;
   color-scheme: light;
+
+  /* shape tokens — remapped per design language */
+  --radius-card: 16px; /* rounded-2xl · cards, sheets */
+  --radius-soft: 12px; /* rounded-xl · rows, nav items */
+  --radius-mid: 8px;   /* rounded-lg · small chips, kbd */
+  --radius-field: 10px; /* inputs via .field */
+  --radius-pill: 999px; /* buttons, chips via component classes */
+
+  /* type roles — remapped per design language */
+  --dl-display: var(--font-fraunces);
+  --dl-sans: var(--font-instrument);
+  --dl-mono: var(--font-plex);
+
+  /* Papier accent (also the fallback when no data-accent is set yet) */
+  --accent: #31633f;
+  --accent-soft: #e2eadd;
 }
 
 .dark {
+  /* Papier · dark */
   --paper: #17150f;
   --paper-deep: #1e1b14;
   --card: #211e17;
@@ -28,14 +60,143 @@
   --ink-soft: #a29a88;
   --line: #353025;
   --grid: #251f15;
-  --accent: #8fb99a;
-  --accent-soft: #253528;
   --marker: #e08a63;
   --info: #8fb4dd;
   --amber: #d9b95c;
   --shadow-tint: 0, 0, 0;
   color-scheme: dark;
+
+  --accent: #8fb99a;
+  --accent-soft: #253528;
 }
+
+/* ---------------- design languages · light ---------------- */
+
+[data-dl="klar"] {
+  /* Klar — cool, bright, reduced; sans throughout, quiet surfaces */
+  --paper: #f6f7f9;
+  --paper-deep: #eef0f4;
+  --card: #ffffff;
+  --ink: #1b202a;
+  --ink-soft: #69737f;
+  --line: #e3e7ed;
+  --grid: #eaeef3;
+  --marker: #b0402a;
+  --info: #2f6398;
+  --amber: #8a6a10;
+  --shadow-tint: 27, 32, 42;
+  --radius-card: 14px;
+  --radius-soft: 10px;
+  --radius-mid: 8px;
+  --radius-field: 8px;
+  --radius-pill: 8px;
+  --dl-display: var(--font-instrument);
+}
+
+[data-dl="tinte"] {
+  /* Tinte — high-contrast ink, sharp edges, editorial */
+  --paper: #f3f2ed;
+  --paper-deep: #eae9e2;
+  --card: #fffefb;
+  --ink: #16140f;
+  --ink-soft: #6e6a5f;
+  --line: #d8d4c6;
+  --grid: #e6e4da;
+  --marker: #a83a24;
+  --info: #27547f;
+  --amber: #7d5e0a;
+  --shadow-tint: 22, 20, 15;
+  --radius-card: 3px;
+  --radius-soft: 3px;
+  --radius-mid: 3px;
+  --radius-field: 3px;
+  --radius-pill: 3px;
+}
+
+[data-dl="konsole"] {
+  /* Konsole — everything monospace, terminal warmth */
+  --paper: #f2f4ec;
+  --paper-deep: #e8ebdf;
+  --card: #fafbf4;
+  --ink: #232a1e;
+  --ink-soft: #75806a;
+  --line: #dce1cf;
+  --grid: #e5e9d9;
+  --marker: #b2532f;
+  --info: #3f7a68;
+  --amber: #8a6a10;
+  --shadow-tint: 30, 36, 22;
+  --radius-card: 6px;
+  --radius-soft: 6px;
+  --radius-mid: 4px;
+  --radius-field: 4px;
+  --radius-pill: 4px;
+  --dl-display: var(--font-plex);
+  --dl-sans: var(--font-plex);
+}
+
+/* ---------------- design languages · dark ----------------
+   same element as .dark, so the higher specificity wins over
+   both the base .dark palette and the light design block. */
+
+.dark[data-dl="klar"] {
+  --paper: #101318;
+  --paper-deep: #161a21;
+  --card: #1a1f27;
+  --ink: #e7eaf0;
+  --ink-soft: #8d97a6;
+  --line: #272e39;
+  --grid: #151a21;
+  --marker: #e2795e;
+  --info: #8fb4dd;
+  --amber: #d9b95c;
+  --shadow-tint: 0, 0, 0;
+}
+
+.dark[data-dl="tinte"] {
+  --paper: #0e0d0b;
+  --paper-deep: #151310;
+  --card: #181613;
+  --ink: #ebe7da;
+  --ink-soft: #9a9485;
+  --line: #2e2b23;
+  --grid: #191712;
+  --marker: #e07b5a;
+  --info: #93b7dc;
+  --amber: #d4b254;
+  --shadow-tint: 0, 0, 0;
+}
+
+.dark[data-dl="konsole"] {
+  --paper: #0e120c;
+  --paper-deep: #131810;
+  --card: #171c13;
+  --ink: #d6dfc9;
+  --ink-soft: #8b9680;
+  --line: #2a3223;
+  --grid: #12160e;
+  --marker: #e08a63;
+  --info: #8fc7ae;
+  --amber: #d9b95c;
+  --shadow-tint: 0, 0, 0;
+}
+
+/* ---------------- accent colors ----------------
+   deliberately separate from the design language: any accent
+   works with any design. Light blocks first, dark blocks after —
+   .dark[data-accent] out-specifies everything relevant above. */
+
+[data-accent="blue"] { --accent: #2f5d8a; --accent-soft: #dbe6f0; }
+[data-accent="brick"] { --accent: #a1442f; --accent-soft: #f0e0d9; }
+[data-accent="violet"] { --accent: #6b4d9e; --accent-soft: #e9e3f3; }
+[data-accent="teal"] { --accent: #1f6f6a; --accent-soft: #d8eae7; }
+[data-accent="gold"] { --accent: #8f6b0e; --accent-soft: #efe7d0; }
+
+.dark[data-accent="blue"] { --accent: #8fb4dd; --accent-soft: #1f2b3a; }
+.dark[data-accent="brick"] { --accent: #dd9077; --accent-soft: #37231b; }
+.dark[data-accent="violet"] { --accent: #b49bdc; --accent-soft: #2a2238; }
+.dark[data-accent="teal"] { --accent: #8ec7c0; --accent-soft: #1c2e2c; }
+.dark[data-accent="gold"] { --accent: #d9b95c; --accent-soft: #322a15; }
 
 @theme inline {
   --color-paper: var(--paper);
@@ -51,15 +212,21 @@
   --color-info: var(--info);
   --color-amber: var(--amber);
 
-  --font-display: var(--font-fraunces);
-  --font-sans: var(--font-instrument);
-  --font-mono: var(--font-plex);
+  /* type roles follow the design language */
+  --font-display: var(--dl-display);
+  --font-sans: var(--dl-sans);
+  --font-mono: var(--dl-mono);
+
+  /* shape tokens follow the design language */
+  --radius-2xl: var(--radius-card);
+  --radius-xl: var(--radius-soft);
+  --radius-lg: var(--radius-mid);
 }
 
 body {
   background: var(--paper);
   color: var(--ink);
-  font-family: var(--font-instrument);
+  font-family: var(--dl-sans);
 }
 
 ::selection {
@@ -67,32 +234,38 @@ body {
   color: var(--paper);
 }
 
-/* shape system: pill buttons + pill chips · 16px cards · 10px fields.
-   Nothing else gets an arbitrary radius. */
+/* shape system: pill buttons + pill chips · 16px cards · 10px fields —
+   radii come from the shape tokens so design languages can retune them. */
 @layer components {
   .field {
-    @apply w-full rounded-[10px] border border-line bg-card px-3 py-2 text-sm text-ink transition placeholder:text-ink-soft/60 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30;
+    @apply w-full border border-line bg-card px-3 py-2 text-sm text-ink transition placeholder:text-ink-soft/60 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30;
+    border-radius: var(--radius-field);
     box-shadow: inset 0 1px 0 rgb(var(--shadow-tint) / 0.03);
   }
 
   .btn-primary {
-    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-accent px-5 py-2 text-sm font-medium text-paper transition-[background-color,transform,box-shadow] hover:bg-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 bg-accent px-5 py-2 text-sm font-medium text-paper transition-[background-color,transform,box-shadow] hover:bg-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40;
+    border-radius: var(--radius-pill);
   }
 
   .btn-ghost {
-    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-line bg-card px-4 py-2 text-sm text-ink transition-[border-color,background-color,transform] hover:border-ink/30 hover:bg-paper-deep/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 border border-line bg-card px-4 py-2 text-sm text-ink transition-[border-color,background-color,transform] hover:border-ink/30 hover:bg-paper-deep/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40;
+    border-radius: var(--radius-pill);
   }
 
   .btn-icon {
-    @apply grid size-8 cursor-pointer place-items-center rounded-full text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink;
+    @apply grid size-8 cursor-pointer place-items-center text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink;
+    border-radius: var(--radius-pill);
   }
 
   .chip {
-    @apply inline-flex items-center gap-1 rounded-full border border-line bg-paper px-2 py-0.5 text-[11px] leading-4;
+    @apply inline-flex items-center gap-1 border border-line bg-paper px-2 py-0.5 text-[11px] leading-4;
+    border-radius: var(--radius-pill);
   }
 
   .card {
-    @apply rounded-2xl border border-line bg-card;
+    @apply border border-line bg-card;
+    border-radius: var(--radius-card);
     box-shadow:
       0 1px 2px rgb(var(--shadow-tint) / 0.04),
       0 12px 32px -24px rgb(var(--shadow-tint) / 0.18);
