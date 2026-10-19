@@ -626,6 +626,10 @@ const de: Record<string, string> = {
   "cancel anytime": "jederzeit kündbar",
   "best value": "günstigste Option",
   "Continue free": "Kostenlos weitermachen",
+  "Every feature, no limits": "Alle Funktionen, keine Grenzen",
+  "AI study room included": "KI-Lernraum inklusive",
+  "Early access to new features": "Früher Zugriff auf neue Funktionen",
+  "No ads, ever": "Keine Werbung, nie",
 };
 
 interface LangState {
