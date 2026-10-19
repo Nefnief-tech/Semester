@@ -613,6 +613,19 @@ const de: Record<string, string> = {
     "Design, Akzentfarbe, Ecken, Hintergrund und Animationen liegen in deinen Konto-Einstellungen und werden bei jeder Anmeldung geladen.",
   "Sign in to keep your look in sync across devices.":
     "Melde dich an, um dein Aussehen auf allen Geräten zu synchronisieren.",
+
+  /* paywall one-timer */
+  "Semester Pro": "Semester Pro",
+  "One price, everything unlocked.":
+    "Ein Preis, alles freigeschaltet.",
+  Monthly: "Monatlich",
+  Yearly: "Jährlich",
+  "per month": "pro Monat",
+  "per year": "pro Jahr",
+  "save 25%": "25 % sparen",
+  "cancel anytime": "jederzeit kündbar",
+  "best value": "günstigste Option",
+  "Continue free": "Kostenlos weitermachen",
 };
 
 interface LangState {
