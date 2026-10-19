@@ -28,6 +28,7 @@ import {
 } from "@/lib/utils";
 import PageSkeleton from "@/components/ui/PageSkeleton";
 import OnboardingCard from "@/components/dashboard/OnboardingCard";
+import PaywallModal from "@/components/paywall/PaywallModal";
 import { DueChip, SubjectDot } from "@/components/ui/bits";
 import { Chip } from "@/components/calendar/items";
 
@@ -312,6 +313,7 @@ export default function DashboardPage() {
   return (
     <div>
       {isEmpty && <OnboardingCard />}
+      <PaywallModal />
 
       {/* ============ level 1 · hero: greeting beside the lesson that is on ============ */}
       <header
