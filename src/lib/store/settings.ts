@@ -66,6 +66,8 @@ interface SettingsState {
   motion: MotionPref;
   /** opt-in: mirror the appearance slice into the Appwrite account prefs */
   syncAppearance: boolean;
+  /** one-time Pro pitch shown (web paywall modal) — device-level, never syncs */
+  proPitchSeen: boolean;
   setBundesland: (code: string) => void;
   setSchoolYear: (label: string) => void;
   setReading: (patch: Partial<ReadingPrefs>) => void;
@@ -75,6 +77,7 @@ interface SettingsState {
   setGrid: (grid: GridPattern) => void;
   setMotion: (motion: MotionPref) => void;
   setSyncAppearance: (sync: boolean) => void;
+  setProPitchSeen: () => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -89,6 +92,7 @@ export const useSettingsStore = create<SettingsState>()(
       grid: "dots",
       motion: "normal",
       syncAppearance: false,
+      proPitchSeen: false,
       setBundesland: (bundesland) => set({ bundesland }),
       setSchoolYear: (schoolYear) => set({ schoolYear: schoolYear.trim() }),
       setReading: (patch) => set((s) => ({ reading: { ...s.reading, ...patch } })),
@@ -98,6 +102,7 @@ export const useSettingsStore = create<SettingsState>()(
       setGrid: (grid) => set({ grid }),
       setMotion: (motion) => set({ motion }),
       setSyncAppearance: (syncAppearance) => set({ syncAppearance }),
+      setProPitchSeen: () => set({ proPitchSeen: true }),
     }),
     { storage: gatedJSONStorage(), name: "semester.settings", version: 1 },
   ),
