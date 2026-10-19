@@ -630,6 +630,14 @@ const de: Record<string, string> = {
   "AI study room included": "KI-Lernraum inklusive",
   "Early access to new features": "Früher Zugriff auf neue Funktionen",
   "No ads, ever": "Keine Werbung, nie",
+  "Tasks, homework, grades, timetable, calendar and the AI study room — everything, on every device.":
+    "Aufgaben, Hausaufgaben, Noten, Stundenplan, Kalender und der KI-Lernraum — alles, auf jedem Gerät.",
+  "Grounded answers that cite your documents, flashcard decks that build themselves.":
+    "Antworten, die deine Unterlagen zitieren, dazu Lernkarten, die sich selbst erstellen.",
+  "Spaced repetition, exports and more — you get them first.":
+    "Spaced Repetition, Exporte und mehr — du bekommst es zuerst.",
+  "No trackers, nothing sold — your desk stays yours.":
+    "Keine Tracker, nichts wird verkauft — dein Schreibtisch bleibt deiner.",
 };
 
 interface LangState {

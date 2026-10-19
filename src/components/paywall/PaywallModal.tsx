@@ -12,10 +12,26 @@ import { useT } from "@/lib/i18n";
  */
 
 const BENEFITS = [
-  { Icon: InfinityIcon, key: "Every feature, no limits" },
-  { Icon: Sparkles, key: "AI study room included" },
-  { Icon: Rocket, key: "Early access to new features" },
-  { Icon: Heart, key: "No ads, ever" },
+  {
+    Icon: InfinityIcon,
+    key: "Every feature, no limits",
+    sub: "Tasks, homework, grades, timetable, calendar and the AI study room — everything, on every device.",
+  },
+  {
+    Icon: Sparkles,
+    key: "AI study room included",
+    sub: "Grounded answers that cite your documents, flashcard decks that build themselves.",
+  },
+  {
+    Icon: Rocket,
+    key: "Early access to new features",
+    sub: "Spaced repetition, exports and more — you get them first.",
+  },
+  {
+    Icon: Heart,
+    key: "No ads, ever",
+    sub: "No trackers, nothing sold — your desk stays yours.",
+  },
 ];
 
 const PLANS = [
@@ -76,12 +92,15 @@ export default function PaywallModal() {
         </h2>
 
         <div className="mt-8 grid gap-x-8 gap-y-5 sm:grid-cols-2">
-          {BENEFITS.map(({ Icon, key }) => (
-            <div key={key} className="flex items-center gap-3">
-              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
-                <Icon className="size-4" />
+          {BENEFITS.map(({ Icon, key, sub }) => (
+            <div key={key} className="flex items-start gap-3.5">
+              <span className="mt-1 grid size-10 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
+                <Icon className="size-5" />
               </span>
-              <p className="text-sm font-semibold">{t(key)}</p>
+              <div>
+                <p className="text-sm font-semibold">{t(key)}</p>
+                <p className="mt-0.5 text-sm text-ink-soft">{t(sub)}</p>
+              </div>
             </div>
           ))}
         </div>
