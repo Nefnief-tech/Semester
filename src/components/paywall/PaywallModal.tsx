@@ -75,26 +75,41 @@ export default function PaywallModal() {
       aria-modal="true"
       aria-label="Semester Pro"
     >
+      {/* soft accent atmosphere — pure decoration */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed -right-28 -top-28 size-96 rounded-full bg-accent/[0.08] blur-3xl"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none fixed -bottom-40 -left-32 size-[28rem] rounded-full bg-accent/[0.05] blur-3xl"
+      />
+
       <button
         onClick={dismiss}
-        className="btn-icon fixed right-5 top-5"
+        className="btn-icon fixed right-5 top-5 cursor-pointer transition-transform hover:rotate-90"
         aria-label="Close"
       >
         <X className="size-4" />
       </button>
 
-      <div className="mx-auto flex min-h-dvh max-w-2xl flex-col justify-center px-6 py-14">
-        <p className="font-mono text-[10px] tracking-[0.18em] text-accent uppercase">
+      <div className="relative mx-auto flex min-h-dvh max-w-2xl flex-col justify-center px-6 py-14">
+        <p
+          className="rise font-mono text-[10px] tracking-[0.18em] text-accent uppercase"
+        >
           Semester Pro
         </p>
-        <h2 className="mt-3 font-display text-4xl leading-[1.05] font-semibold tracking-tight sm:text-5xl">
+        <h2 className="rise mt-3 font-display text-4xl leading-[1.05] font-semibold tracking-tight sm:text-5xl">
           {t("One price, everything unlocked.")}
         </h2>
 
-        <div className="mt-8 grid gap-x-8 gap-y-5 sm:grid-cols-2">
+        <div
+          className="rise mt-8 grid gap-x-8 gap-y-5 sm:grid-cols-2"
+          style={{ "--d": ".05s" } as React.CSSProperties}
+        >
           {BENEFITS.map(({ Icon, key, sub }) => (
             <div key={key} className="flex items-start gap-3.5">
-              <span className="mt-1 grid size-10 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
+              <span className="mt-1 grid size-10 shrink-0 place-items-center rounded-full bg-accent-soft text-accent ring-1 ring-accent/15">
                 <Icon className="size-5" />
               </span>
               <div>
@@ -105,13 +120,16 @@ export default function PaywallModal() {
           ))}
         </div>
 
-        <div className="mt-10 grid gap-3 sm:grid-cols-2">
+        <div
+          className="rise mt-10 grid gap-3 sm:grid-cols-2"
+          style={{ "--d": ".1s" } as React.CSSProperties}
+        >
           {PLANS.map((plan) => (
             <div
               key={plan.id}
               className={
                 plan.highlight
-                  ? "relative rounded-xl border border-accent bg-accent/[0.06] p-4"
+                  ? "relative rounded-xl border border-accent bg-accent/[0.06] p-4 shadow-sm"
                   : "relative rounded-xl border border-line p-4"
               }
             >
@@ -142,12 +160,15 @@ export default function PaywallModal() {
           ))}
         </div>
 
-        <div className="mt-8 flex flex-col gap-2 sm:flex-row-reverse">
+        <div
+          className="rise mt-8 flex flex-col gap-2 sm:flex-row-reverse"
+          style={{ "--d": ".15s" } as React.CSSProperties}
+        >
           <button
             onClick={dismiss}
             className="flex-1 cursor-pointer rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-paper transition-opacity hover:opacity-90"
           >
-            {t("Got it")}
+            {t("Sounds good")}
           </button>
           <button
             onClick={dismiss}

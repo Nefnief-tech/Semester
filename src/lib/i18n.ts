@@ -616,28 +616,28 @@ const de: Record<string, string> = {
 
   /* paywall one-timer */
   "Semester Pro": "Semester Pro",
-  "One price, everything unlocked.":
-    "Ein Preis, alles freigeschaltet.",
+  "One price, everything unlocked.": "Ein Preis — alles freigeschaltet.",
   Monthly: "Monatlich",
   Yearly: "Jährlich",
   "per month": "pro Monat",
   "per year": "pro Jahr",
   "save 25%": "25 % sparen",
   "cancel anytime": "jederzeit kündbar",
-  "best value": "günstigste Option",
+  "best value": "Beste Wahl",
+  "Sounds good": "Alles klar",
   "Continue free": "Kostenlos weitermachen",
-  "Every feature, no limits": "Alle Funktionen, keine Grenzen",
+  "Every feature, no limits": "Alle Funktionen, ohne Grenzen",
   "AI study room included": "KI-Lernraum inklusive",
-  "Early access to new features": "Früher Zugriff auf neue Funktionen",
-  "No ads, ever": "Keine Werbung, nie",
+  "Early access to new features": "Neue Funktionen zuerst",
+  "No ads, ever": "Keine Werbung, für immer",
   "Tasks, homework, grades, timetable, calendar and the AI study room — everything, on every device.":
-    "Aufgaben, Hausaufgaben, Noten, Stundenplan, Kalender und der KI-Lernraum — alles, auf jedem Gerät.",
+    "Aufgaben, Hausaufgaben, Noten, Stundenplan, Kalender und der KI-Lernraum — alles auf jedem Gerät.",
   "Grounded answers that cite your documents, flashcard decks that build themselves.":
-    "Antworten, die deine Unterlagen zitieren, dazu Lernkarten, die sich selbst erstellen.",
+    "Antworten mit Zitat aus deinen Unterlagen — und Lernkarten, die sich von selbst erstellen.",
   "Spaced repetition, exports and more — you get them first.":
-    "Spaced Repetition, Exporte und mehr — du bekommst es zuerst.",
+    "Spaced Repetition, Exporte und mehr — du bist zuerst dran.",
   "No trackers, nothing sold — your desk stays yours.":
-    "Keine Tracker, nichts wird verkauft — dein Schreibtisch bleibt deiner.",
+    "Keine Tracker, keine Datenverkäufe — dein Schreibtisch bleibt deiner.",
 };
 
 interface LangState {
