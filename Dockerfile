@@ -11,8 +11,8 @@ RUN corepack enable && pnpm install --frozen-lockfile --ignore-scripts
 # 2. build (public Appwrite vars are inlined at build time) -----------------
 FROM node:22-alpine AS builder
 WORKDIR /app
-ARG NEXT_PUBLIC_APPWRITE_ENDPOINT=https://fra.cloud.appwrite.io/v1
-ARG NEXT_PUBLIC_APPWRITE_PROJECT_ID=6aac46e3001a9ef65b25
+ARG NEXT_PUBLIC_APPWRITE_ENDPOINT=https://ow.nief.dev/v1
+ARG NEXT_PUBLIC_APPWRITE_PROJECT_ID=lnffdpvylaNuLhMhmNUH
 ENV NEXT_PUBLIC_APPWRITE_ENDPOINT=$NEXT_PUBLIC_APPWRITE_ENDPOINT
 ENV NEXT_PUBLIC_APPWRITE_PROJECT_ID=$NEXT_PUBLIC_APPWRITE_PROJECT_ID
 COPY package.json pnpm-lock.yaml ./

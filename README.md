@@ -99,7 +99,7 @@ Without any configuration the app is fully usable **local-only**. To enable sync
 1. **Appwrite** — create a project at [Appwrite Cloud](https://cloud.appwrite.io), then add
    to `.env.local`:
    ```
-   NEXT_PUBLIC_APPWRITE_ENDPOINT=https://fra.cloud.appwrite.io/v1
+   NEXT_PUBLIC_APPWRITE_ENDPOINT=https://ow.nief.dev/v1
    NEXT_PUBLIC_APPWRITE_PROJECT_ID=your-project-id
    ```
    Provision the database once (server key used by the script only, never shipped):

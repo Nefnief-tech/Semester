@@ -14,7 +14,7 @@ One JSON file per collection/table, strictly in this format:
 }
 ```
 
-Endpoint `https://fra.cloud.appwrite.io/v1` · project `6aac46e3001a9ef65b25` · database `semester`.
+Endpoint `https://ow.nief.dev/v1` · project `lnffdpvylaNuLhMhmNUH` · database `semester`.
 Sources: `scripts/appwrite-setup.mjs`, `scripts/appwrite-structured-schema.mjs`, `scripts/appwrite-migrate-documents-to-rows.mjs`.
 
 ## Files
