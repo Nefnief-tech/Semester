@@ -9,7 +9,7 @@
  * Every row carries userId; row security is enabled so users only see their own rows.
  */
 
-const ENDPOINT = (process.env.APPWRITE_ENDPOINT || "https://fra.cloud.appwrite.io/v1").replace(/\/+$/, "");
+const ENDPOINT = (process.env.APPWRITE_ENDPOINT || "https://ow.nief.dev/v1").replace(/\/+$/, "");
 const PROJECT_ID = process.env.APPWRITE_PROJECT_ID;
 const API_KEY = process.env.APPWRITE_API_KEY;
 const DATABASE_ID = "semester";

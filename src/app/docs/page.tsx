@@ -477,7 +477,7 @@ cd study
 npm install
 
 # .env.local
-NEXT_PUBLIC_APPWRITE_ENDPOINT=https://fra.cloud.appwrite.io/v1
+NEXT_PUBLIC_APPWRITE_ENDPOINT=https://ow.nief.dev/v1
 NEXT_PUBLIC_APPWRITE_PROJECT_ID=<your project id>
 AI_API_KEY=<optional: your AI provider key>
 

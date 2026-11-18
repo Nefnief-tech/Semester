@@ -28,7 +28,7 @@ import { createHash } from "node:crypto";
  * The scoped API key is injected as APPWRITE_API_KEY (see README).
  */
 
-const ENDPOINT = (process.env.APPWRITE_FUNCTION_API_ENDPOINT || process.env.APPWRITE_ENDPOINT || "https://fra.cloud.appwrite.io/v1").replace(/\/+$/, "");
+const ENDPOINT = (process.env.APPWRITE_FUNCTION_API_ENDPOINT || process.env.APPWRITE_ENDPOINT || "https://ow.nief.dev/v1").replace(/\/+$/, "");
 // hardening: the only outbound host is the Appwrite-injected endpoint — refuse
 // anything else so a bad env var can't turn this function into a request proxy
 if (!/^https:\/\/[a-z0-9.-]+\/?/i.test(ENDPOINT)) {
@@ -37,7 +37,7 @@ if (!/^https:\/\/[a-z0-9.-]+\/?/i.test(ENDPOINT)) {
 const PROJECT_ID =
   process.env.APPWRITE_FUNCTION_PROJECT_ID ||
   process.env.APPWRITE_PROJECT_ID ||
-  "6aac46e3001a9ef65b25";
+  "lnffdpvylaNuLhMhmNUH";
 const API_KEY = process.env.APPWRITE_API_KEY || "";
 
 const DATABASE_ID = "semester";
@@ -46,7 +46,7 @@ const DATABASE_ID = "semester";
 /* Appwrite REST helpers (no SDK — keeps the deployment tiny)          */
 /* ------------------------------------------------------------------ */
 
-const ALLOWED_HOSTS = new Set(["fra.cloud.appwrite.io", "cloud.appwrite.io"]);
+const ALLOWED_HOSTS = new Set(["fra.cloud.appwrite.io", "cloud.appwrite.io", "ow.nief.dev"]);
 
 async function aw(path, options = {}) {
   // path is always a literal Appwrite API route built inside this file.

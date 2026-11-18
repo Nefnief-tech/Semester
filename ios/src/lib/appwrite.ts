@@ -22,9 +22,9 @@ import { dataKey } from './crypto/keyring';
 import { encryptRow } from './crypto/rows';
 
 export const APPWRITE_ENDPOINT =
-  process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT ?? 'https://fra.cloud.appwrite.io/v1';
+  process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT ?? 'https://ow.nief.dev/v1';
 export const APPWRITE_PROJECT_ID =
-  process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID ?? '6aac46e3001a9ef65b25';
+  process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID ?? 'lnffdpvylaNuLhMhmNUH';
 
 export const DATABASE_ID = 'semester';
 export const STORAGE_BUCKET_ID = 'study-files';

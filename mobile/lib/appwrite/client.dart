@@ -8,11 +8,11 @@ import '../stores/auth_store.dart';
 ///   flutter build apk --dart-define=APPWRITE_ENDPOINT=… --dart-define=APPWRITE_PROJECT_ID=…
 const String kAppwriteEndpoint = String.fromEnvironment(
   'APPWRITE_ENDPOINT',
-  defaultValue: 'https://fra.cloud.appwrite.io/v1',
+  defaultValue: 'https://ow.nief.dev/v1',
 );
 const String kAppwriteProjectId = String.fromEnvironment(
   'APPWRITE_PROJECT_ID',
-  defaultValue: '6aac46e3001a9ef65b25',
+  defaultValue: 'lnffdpvylaNuLhMhmNUH',
 );
 
 const String kDatabaseId = 'semester';

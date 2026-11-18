@@ -6,8 +6,8 @@ import { Account, Client, Databases, Storage, Teams } from "appwrite";
  * env vars override the defaults if you ever need a different project.
  */
 
-export const ENDPOINT = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || "https://fra.cloud.appwrite.io/v1";
-export const PROJECT_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "6aac46e3001a9ef65b25";
+export const ENDPOINT = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || "https://ow.nief.dev/v1";
+export const PROJECT_ID = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || "lnffdpvylaNuLhMhmNUH";
 
 export const DATABASE_ID = "semester";
 export const SNAPSHOTS_COLLECTION_ID = "snapshots";
