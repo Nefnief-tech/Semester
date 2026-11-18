@@ -1,0 +1,39 @@
+{
+  "name": "Flashcard decks",
+  "id": "decks",
+  "attributes": [
+    {
+      "key": "userId",
+      "type": "string",
+      "required": true,
+      "size": 64
+    },
+    {
+      "key": "title",
+      "type": "string",
+      "required": true,
+      "size": 2048
+    },
+    {
+      "key": "documentIds",
+      "type": "string",
+      "size": 20000
+    },
+    {
+      "key": "createdAt",
+      "type": "integer",
+      "required": true
+    },
+    {
+      "key": "updatedAt",
+      "type": "integer",
+      "required": true
+    },
+    {
+      "key": "deleted",
+      "type": "boolean",
+      "default": false
+    }
+  ],
+  "documents": []
+}

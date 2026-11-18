@@ -1,0 +1,24 @@
+{
+  "name": "Portal courses",
+  "id": "portal_courses",
+  "attributes": [
+    {
+      "key": "userId",
+      "type": "string",
+      "required": true,
+      "size": 64
+    },
+    {
+      "key": "course",
+      "type": "string",
+      "required": true,
+      "size": 512
+    },
+    {
+      "key": "deleted",
+      "type": "boolean",
+      "default": false
+    }
+  ],
+  "documents": []
+}

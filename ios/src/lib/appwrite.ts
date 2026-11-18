@@ -18,6 +18,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { AuthUser } from '../stores/auth_store';
+import { dataKey } from './crypto/keyring';
+import { encryptRow } from './crypto/rows';
 
 export const APPWRITE_ENDPOINT =
   process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT ?? 'https://fra.cloud.appwrite.io/v1';
@@ -205,6 +207,24 @@ function userFromJson(j: Record<string, unknown>): AuthUser {
     emailVerified: j.emailVerification === true,
     mfa: j.mfa === true,
   };
+}
+
+/** the account's prefs object. A failed read throws on purpose: the keyring
+ *  must not mistake "offline" for "no key yet" and create a second key on top
+ *  of data sealed with the first one. */
+export async function getPrefs(): Promise<Record<string, unknown>> {
+  const res = await appwriteRequest('/account/prefs', { auth: 'session' });
+  if (!res.ok) throw await errorFrom(res);
+  return ((await res.json()) as Record<string, unknown>) ?? {};
+}
+
+export async function updatePrefs(prefs: Record<string, unknown>): Promise<void> {
+  const res = await appwriteRequest('/account/prefs', {
+    method: 'PATCH',
+    body: { prefs },
+    auth: 'session',
+  });
+  if (!res.ok) throw await errorFrom(res);
 }
 
 /** returns the user or throws — callers distinguish "no valid session"
@@ -456,10 +476,14 @@ export async function restUpsertRow(
   data: RowData,
   userId: string,
 ): Promise<void> {
+  // nothing leaves the device readable: every text column is sealed first
+  const key = dataKey();
+  if (!key) throw new Error('encryption is locked — unlock to sync');
+  const sealed = await encryptRow(key, table, data);
   const res = await signedRowRequest(table, rowId, null, {
     method: 'PUT',
     body: JSON.stringify({
-      data,
+      data: sealed,
       permissions: [`read("user:${userId}")`, `write("user:${userId}")`],
     }),
   });

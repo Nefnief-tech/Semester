@@ -215,8 +215,11 @@ function slotOf(now) {
 /* digest builders                                                     */
 /* ------------------------------------------------------------------ */
 
-/** lessons of `targetDay` (offset from now) with mirrored substitutions */
-function classesFor(entries, subs, courses, targetDay) {
+/** lessons of `targetDay` (offset from now) with mirrored substitutions.
+ *  Subject, teacher, room and course names are encrypted in the cloud, so the
+ *  server can only count: matching a lesson to its substitution would need
+ *  plaintext on both sides. */
+function classesFor(entries, subs, targetDay) {
   if (entries.length === 0) return null;
 
   const tKey = ymd(targetDay);
@@ -226,37 +229,12 @@ function classesFor(entries, subs, courses, targetDay) {
   if (lessons.length === 0) return null; // weekend / free day
 
   const daySubs = subs.filter((s) => parseDeDate(s.date) === tKey);
-  const courseCodes = courses.map((c) => String(c).trim());
+  const cancelled = daySubs.filter((s) => s.cancelled).length;
+  const substituted = daySubs.filter((s) => !s.cancelled).length;
 
-  const periods = [...new Set(lessons.map((e) => e.period))].sort((a, b) => a - b);
-  const lines = [];
-  let cancelled = 0;
-  let substituted = 0;
-
-  for (const p of periods) {
-    for (const e of lessons.filter((x) => x.period === p)) {
-      const cellSubs = daySubs.filter(
-        (s) =>
-          parseInt(s.period, 10) === p &&
-          courseCodes.includes(String(s.course).trim()) &&
-          (String(e.subject).trim() === String(s.course).trim() ||
-            String(e.teacher ?? "").trim() === String(s.course).trim()),
-      );
-      const isCancelled = cellSubs.some((s) => s.cancelled);
-      const sub = cellSubs.find((s) => !s.cancelled);
-      if (isCancelled) {
-        cancelled += 1;
-        lines.push(`${p}. ${e.subject} — CANCELLED`);
-      } else if (sub) {
-        substituted += 1;
-        lines.push(
-          `${p}. ${e.subject} → ${sub.substitute || "substitution"}${sub.room ? ` · ${sub.room}` : ""}`,
-        );
-      } else {
-        lines.push(`${p}. ${e.subject}${e.room ? ` · ${e.room}` : ""}`);
-      }
-    }
-  }
+  const lines = [`${lessons.length} lesson${lessons.length === 1 ? "" : "s"} scheduled`];
+  if (cancelled) lines.push(`${cancelled} cancelled`);
+  if (substituted) lines.push(`${substituted} substitution${substituted === 1 ? "" : "s"}`);
 
   return {
     weekday: DAYS.indexOf(day) >= 0 ? day : "",
@@ -267,10 +245,10 @@ function classesFor(entries, subs, courses, targetDay) {
   };
 }
 
-/** open todos & homework that are overdue or due within the next 2 days */
-function dueSoon(now, todos, homework, subjects) {
-  const subjectName = (id) => subjects.find((s) => s.id === id)?.name ?? null;
-
+/** open todos & homework that are overdue or due within the next 2 days.
+ *  Titles and subject names are encrypted, so a reminder carries only the
+ *  timing (and the count that the push title already shows). */
+function dueSoon(now, todos, homework) {
   const windows = [];
   const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 21); // catch long-overdue
   const end = addDays(now, 2);
@@ -293,10 +271,9 @@ function dueSoon(now, todos, homework, subjects) {
           : isTomorrow
             ? `tomorrow${hasTime ? ` ${hhmm}` : ""}`
             : "soon";
-      const subj = subjectName(item.subjectId);
       windows.push({
         sort: d.getTime(),
-        line: `${item.priority === "high" ? "‼️ " : ""}${label} — ${subj ? `${subj}: ` : ""}${item.title} (${kind})`,
+        line: `${item.priority === "high" ? "‼️ " : ""}${label} — ${kind}`,
         overdue,
       });
     }
@@ -316,7 +293,7 @@ function dueSoon(now, todos, homework, subjects) {
 }
 
 /** exams, deadlines & events within the next 7 days (from `fromOffset`) */
-function weekAhead(now, events, subjects, fromOffset) {
+function weekAhead(now, events, fromOffset) {
   const list = events;
   if (list.length === 0) return null;
 
@@ -325,16 +302,14 @@ function weekAhead(now, events, subjects, fromOffset) {
   const wd = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const typeLabel = { exam: "Exam", deadline: "Deadline", study: "Study", event: "Event" };
 
-  const subjectName = (id) => subjects.find((s) => s.id === id)?.name ?? null;
   const rows = [];
   for (const e of list) {
     if (!e.date || e.date < from || e.date > until) continue;
     const d = new Date(`${e.date}T00:00:00`);
     const date = `${wd[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}.`;
-    const subj = subjectName(e.subjectId);
     rows.push({
       sort: e.type === "exam" ? 0 : e.type === "deadline" ? 1 : 2,
-      line: `${typeLabel[e.type] ?? "Event"}: ${subj ? `${subj} — ` : ""}${e.title} · ${date}${e.time ? ` ${e.time}` : ""}`,
+      line: `${typeLabel[e.type] ?? "Event"} · ${date}${e.time ? ` ${e.time}` : ""}`,
     });
   }
   if (rows.length === 0) return null;
@@ -370,12 +345,10 @@ export default async ({ req, res, log, error }) => {
   const results = [];
   for (const userId of userIds) {
     try {
-      const [timetableRows, subRows, courseRows, subjectRows, todoRows, homeworkRows, eventRows] =
+      const [timetableRows, subRows, todoRows, homeworkRows, eventRows] =
         await Promise.all([
           listRows("timetable_entries", userId),
           listRows("portal_entries", userId),
-          listRows("portal_courses", userId),
-          listRows("subjects", userId),
           listRows("todos", userId),
           listRows("homeworks", userId),
           listRows("events", userId),
@@ -383,17 +356,15 @@ export default async ({ req, res, log, error }) => {
 
       // structured rows → entity arrays (tombstones excluded)
       const alive = (rows) => rows.filter((r) => r.deleted !== true);
-      const subjects = alive(subjectRows);
       const todos = alive(todoRows);
       const homework = alive(homeworkRows);
       const events = alive(eventRows);
       const entries = alive(timetableRows);
       const subs = alive(subRows);
-      const courses = alive(courseRows).map((r) => r.course);
 
-      const classes = classesFor(entries, subs, courses, addDays(now, dayOffset));
-      const due = dueSoon(now, todos, homework, subjects);
-      const week = weekAhead(now, events, subjects, dayOffset);
+      const classes = classesFor(entries, subs, addDays(now, dayOffset));
+      const due = dueSoon(now, todos, homework);
+      const week = weekAhead(now, events, dayOffset);
 
       if (!classes && !due && !week) {
         log(`${userId.slice(0, 8)}… ${slot}: nothing to send`);

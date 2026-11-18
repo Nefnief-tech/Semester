@@ -25,6 +25,8 @@ import { PushService } from '../lib/push';
 import { useAuthStore } from '../stores/auth_store';
 import { useSettingsStore } from '../stores/settings_store';
 import { SegToggle, SemGhostButton, SemLabel, SemPrimaryButton, SemTextField } from '../components/controls';
+import { openEncryptionGate } from '../components/EncryptionGate';
+import { useKeyringStore } from '../lib/crypto/keyring';
 import { Icon } from '../components/Icon';
 import { useSem } from '../theme/theme';
 import { formatClock } from '../utils/utils';
@@ -67,6 +69,7 @@ export function AuthPanel(): React.JSX.Element {
   const [serverDraft, setServerDraft] = useState(serverUrl);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const keyringStatus = useKeyringStore((s) => s.status);
   const [obscure, setObscure] = useState(true);
 
   // a verification confirmed in the phone's browser (or elsewhere) should
@@ -278,6 +281,17 @@ export function AuthPanel(): React.JSX.Element {
                   ? `synced · ${formatClock(auth.lastSyncedAt)}`
                   : 'not synced yet'}
           </Text>
+          {/* dismissed the unlock prompt? this is the way back */}
+          {keyringStatus === 'locked' ? (
+            <>
+              <View style={{ height: 10 }} />
+              <View style={{ alignItems: 'flex-start' }}>
+                <SemGhostButton onPress={openEncryptionGate}>
+                  <Text style={t.bodyMedium}>Unlock encrypted sync</Text>
+                </SemGhostButton>
+              </View>
+            </>
+          ) : null}
           {!user.emailVerified ? (
             <>
               <View style={{ height: 4 }} />

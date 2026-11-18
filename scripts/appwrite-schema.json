@@ -1,0 +1,614 @@
+{
+  "name": "Semester",
+  "id": "semester",
+  "collections": [
+    {
+      "name": "Chat messages",
+      "id": "chat_messages",
+      "attributes": [
+        {
+          "key": "userId",
+          "type": "string",
+          "required": true,
+          "size": 64
+        },
+        {
+          "key": "role",
+          "type": "string",
+          "required": true,
+          "size": 16
+        },
+        {
+          "key": "content",
+          "type": "string",
+          "required": true,
+          "size": 1048576
+        },
+        {
+          "key": "sources",
+          "type": "string",
+          "size": 131072
+        },
+        {
+          "key": "sentAt",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "key": "deleted",
+          "type": "boolean",
+          "default": false
+        }
+      ],
+      "documents": []
+    },
+    {
+      "name": "Chats",
+      "id": "chats",
+      "attributes": [
+        {
+          "key": "userId",
+          "type": "string",
+          "required": true,
+          "size": 64
+        },
+        {
+          "key": "messages",
+          "type": "string",
+          "required": true,
+          "size": 1000000
+        },
+        {
+          "key": "updatedAt",
+          "type": "integer"
+        }
+      ],
+      "documents": []
+    },
+    {
+      "name": "Flashcard decks",
+      "id": "decks",
+      "attributes": [
+        {
+          "key": "userId",
+          "type": "string",
+          "required": true,
+          "size": 64
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "required": true,
+          "size": 2048
+        },
+        {
+          "key": "documentIds",
+          "type": "string",
+          "size": 20000
+        },
+        {
+          "key": "createdAt",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "key": "updatedAt",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "key": "deleted",
+          "type": "boolean",
+          "default": false
+        }
+      ],
+      "documents": []
+    },
+    {
+      "name": "Decks",
+      "id": "decks",
+      "attributes": [
+        {
+          "key": "userId",
+          "type": "string",
+          "required": true,
+          "size": 64
+        },
+        {
+          "key": "deckId",
+          "type": "string",
+          "required": true,
+          "size": 64
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "size": 2048
+        },
+        {
+          "key": "documentIds",
+          "type": "string",
+          "size": 100000
+        },
+        {
+          "key": "cards",
+          "type": "string",
+          "size": 1000000
+        },
+        {
+          "key": "createdAt",
+          "type": "integer"
+        },
+        {
+          "key": "updatedAt",
+          "type": "integer"
+        }
+      ],
+      "documents": []
+    },
+    {
+      "name": "Events",
+      "id": "events",
+      "attributes": [
+        {
+          "key": "userId",
+          "type": "string",
+          "required": true,
+          "size": 64
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "required": true,
+          "size": 2048
+        },
+        {
+          "key": "date",
+          "type": "string",
+          "required": true,
+          "size": 16
+        },
+        {
+          "key": "time",
+          "type": "string",
+          "size": 8
+        },
+        {
+          "key": "type",
+          "type": "string",
+          "size": 16,
+          "default": "event"
+        },
+        {
+          "key": "subjectId",
+          "type": "string",
+          "size": 64
+        },
+        {
+          "key": "notes",
+          "type": "string",
+          "size": 32768
+        },
+        {
+          "key": "deleted",
+          "type": "boolean",
+          "default": false
+        }
+      ],
+      "documents": []
+    },
+    {
+      "name": "Flashcards",
+      "id": "flashcards",
+      "attributes": [
+        {
+          "key": "userId",
+          "type": "string",
+          "required": true,
+          "size": 64
+        },
+        {
+          "key": "deckId",
+          "type": "string",
+          "required": true,
+          "size": 64
+        },
+        {
+          "key": "front",
+          "type": "string",
+          "required": true,
+          "size": 524288
+        },
+        {
+          "key": "back",
+          "type": "string",
+          "size": 524288
+        },
+        {
+          "key": "deleted",
+          "type": "boolean",
+          "default": false
+        }
+      ],
+      "documents": []
+    },
+    {
+      "name": "Grades",
+      "id": "grades",
+      "attributes": [
+        {
+          "key": "userId",
+          "type": "string",
+          "required": true,
+          "size": 64
+        },
+        {
+          "key": "subjectId",
+          "type": "string",
+          "size": 64
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "required": true,
+          "size": 2048
+        },
+        {
+          "key": "points",
+          "type": "string",
+          "required": true,
+          "size": 256
+        },
+        {
+          "key": "weight",
+          "type": "string",
+          "required": true,
+          "size": 256
+        },
+        {
+          "key": "date",
+          "type": "string",
+          "size": 16
+        },
+        {
+          "key": "deleted",
+          "type": "boolean",
+          "default": false
+        }
+      ],
+      "documents": []
+    },
+    {
+      "name": "Homeworks",
+      "id": "homeworks",
+      "attributes": [
+        {
+          "key": "userId",
+          "type": "string",
+          "required": true,
+          "size": 64
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "required": true,
+          "size": 2048
+        },
+        {
+          "key": "notes",
+          "type": "string",
+          "size": 32768
+        },
+        {
+          "key": "due",
+          "type": "string",
+          "size": 32
+        },
+        {
+          "key": "priority",
+          "type": "string",
+          "size": 16,
+          "default": "medium"
+        },
+        {
+          "key": "subjectId",
+          "type": "string",
+          "size": 64
+        },
+        {
+          "key": "done",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "key": "createdAt",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "key": "deleted",
+          "type": "boolean",
+          "default": false
+        }
+      ],
+      "documents": []
+    },
+    {
+      "name": "Portal courses",
+      "id": "portal_courses",
+      "attributes": [
+        {
+          "key": "userId",
+          "type": "string",
+          "required": true,
+          "size": 64
+        },
+        {
+          "key": "course",
+          "type": "string",
+          "required": true,
+          "size": 512
+        },
+        {
+          "key": "deleted",
+          "type": "boolean",
+          "default": false
+        }
+      ],
+      "documents": []
+    },
+    {
+      "name": "Portal substitute entries",
+      "id": "portal_entries",
+      "attributes": [
+        {
+          "key": "userId",
+          "type": "string",
+          "required": true,
+          "size": 64
+        },
+        {
+          "key": "date",
+          "type": "string",
+          "required": true,
+          "size": 16
+        },
+        {
+          "key": "weekday",
+          "type": "string",
+          "size": 8
+        },
+        {
+          "key": "period",
+          "type": "string",
+          "size": 8
+        },
+        {
+          "key": "course",
+          "type": "string",
+          "size": 512
+        },
+        {
+          "key": "courseOld",
+          "type": "string",
+          "size": 512
+        },
+        {
+          "key": "substitute",
+          "type": "string",
+          "size": 512
+        },
+        {
+          "key": "room",
+          "type": "string",
+          "size": 256
+        },
+        {
+          "key": "info",
+          "type": "string",
+          "size": 2048
+        },
+        {
+          "key": "cancelled",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "key": "deleted",
+          "type": "boolean",
+          "default": false
+        }
+      ],
+      "documents": []
+    },
+    {
+      "name": "Snapshots",
+      "id": "snapshots",
+      "attributes": [
+        {
+          "key": "userId",
+          "type": "string",
+          "required": true,
+          "size": 64
+        },
+        {
+          "key": "key",
+          "type": "string",
+          "required": true,
+          "size": 32
+        },
+        {
+          "key": "data",
+          "type": "string",
+          "required": true,
+          "size": 1000000
+        },
+        {
+          "key": "updatedAt",
+          "type": "integer",
+          "required": true
+        }
+      ],
+      "documents": []
+    },
+    {
+      "name": "Study room selection",
+      "id": "study_selection",
+      "attributes": [
+        {
+          "key": "userId",
+          "type": "string",
+          "required": true,
+          "size": 64
+        },
+        {
+          "key": "documentId",
+          "type": "string",
+          "required": true,
+          "size": 128
+        },
+        {
+          "key": "deleted",
+          "type": "boolean",
+          "default": false
+        }
+      ],
+      "documents": []
+    },
+    {
+      "name": "Subjects",
+      "id": "subjects",
+      "attributes": [
+        {
+          "key": "userId",
+          "type": "string",
+          "required": true,
+          "size": 64
+        },
+        {
+          "key": "name",
+          "type": "string",
+          "required": true,
+          "size": 1024
+        },
+        {
+          "key": "color",
+          "type": "string",
+          "required": true,
+          "size": 16
+        },
+        {
+          "key": "deleted",
+          "type": "boolean",
+          "default": false
+        }
+      ],
+      "documents": []
+    },
+    {
+      "name": "Timetable entries",
+      "id": "timetable_entries",
+      "attributes": [
+        {
+          "key": "userId",
+          "type": "string",
+          "required": true,
+          "size": 64
+        },
+        {
+          "key": "day",
+          "type": "string",
+          "required": true,
+          "size": 8
+        },
+        {
+          "key": "period",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "key": "time",
+          "type": "string",
+          "size": 256
+        },
+        {
+          "key": "subject",
+          "type": "string",
+          "required": true,
+          "size": 512
+        },
+        {
+          "key": "teacher",
+          "type": "string",
+          "size": 512
+        },
+        {
+          "key": "room",
+          "type": "string",
+          "size": 512
+        },
+        {
+          "key": "deleted",
+          "type": "boolean",
+          "default": false
+        }
+      ],
+      "documents": []
+    },
+    {
+      "name": "Todos",
+      "id": "todos",
+      "attributes": [
+        {
+          "key": "userId",
+          "type": "string",
+          "required": true,
+          "size": 64
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "required": true,
+          "size": 2048
+        },
+        {
+          "key": "notes",
+          "type": "string",
+          "size": 32768
+        },
+        {
+          "key": "due",
+          "type": "string",
+          "size": 32
+        },
+        {
+          "key": "priority",
+          "type": "string",
+          "size": 16,
+          "default": "medium"
+        },
+        {
+          "key": "subjectId",
+          "type": "string",
+          "size": 64
+        },
+        {
+          "key": "done",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "key": "createdAt",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "key": "deleted",
+          "type": "boolean",
+          "default": false
+        }
+      ],
+      "documents": []
+    }
+  ]
+}

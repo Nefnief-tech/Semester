@@ -109,6 +109,13 @@ class SyncMetaStore extends PersistedStore {
     persist();
   }
 
+  /// forget every row digest — forces a full re-push (used when encryption is
+  /// switched on, so rows already in the cloud get sealed)
+  void clearRowDigests() {
+    _rowDigests = {};
+    persist();
+  }
+
   @override
   Map<String, dynamic> persistedState() =>
       {'dirtyAt': _dirtyAt, 'loaded': _loaded.toList(), 'rowDigests': _rowDigests};

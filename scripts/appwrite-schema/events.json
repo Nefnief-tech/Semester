@@ -1,0 +1,51 @@
+{
+  "name": "Events",
+  "id": "events",
+  "attributes": [
+    {
+      "key": "userId",
+      "type": "string",
+      "required": true,
+      "size": 64
+    },
+    {
+      "key": "title",
+      "type": "string",
+      "required": true,
+      "size": 2048
+    },
+    {
+      "key": "date",
+      "type": "string",
+      "required": true,
+      "size": 16
+    },
+    {
+      "key": "time",
+      "type": "string",
+      "size": 8
+    },
+    {
+      "key": "type",
+      "type": "string",
+      "size": 16,
+      "default": "event"
+    },
+    {
+      "key": "subjectId",
+      "type": "string",
+      "size": 64
+    },
+    {
+      "key": "notes",
+      "type": "string",
+      "size": 32768
+    },
+    {
+      "key": "deleted",
+      "type": "boolean",
+      "default": false
+    }
+  ],
+  "documents": []
+}

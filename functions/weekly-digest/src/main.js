@@ -188,20 +188,20 @@ function addDays(now, n) {
 const WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const TYPE_LABEL = { exam: "Exam", deadline: "Deadline", study: "Study", event: "Event" };
 
-/** exams/deadlines first, then everything else — within the next 7 days */
-function weekAhead(now, events, homework, todos, subjects) {
+/** exams/deadlines first, then everything else — within the next 7 days.
+ *  Titles and subject names are encrypted before they reach the cloud, so
+ *  each line carries only its kind and date. */
+function weekAhead(now, events, homework, todos) {
   const from = ymd(addDays(now, 1));
   const until = ymd(addDays(now, 7));
-  const subjectName = (id) => subjects.find((s) => s.id === id)?.name ?? null;
 
   const rows = [];
   for (const e of events ?? []) {
     if (e.deleted === true || !e.date || e.date < from || e.date > until) continue;
     const d = new Date(`${e.date}T00:00:00`);
-    const subj = subjectName(e.subjectId);
     rows.push({
       sort: (e.type === "exam" ? 0 : e.type === "deadline" ? 1 : 2) * 1e10 + d.getTime(),
-      line: `${TYPE_LABEL[e.type] ?? "Event"}: ${subj ? `${subj} — ` : ""}${e.title} · ${WD[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}.${e.time ? ` ${e.time}` : ""}`,
+      line: `${TYPE_LABEL[e.type] ?? "Event"} · ${WD[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}.${e.time ? ` ${e.time}` : ""}`,
       kind: e.type === "exam" || e.type === "deadline" ? "exam" : "event",
     });
   }
@@ -212,12 +212,11 @@ function weekAhead(now, events, homework, todos, subjects) {
     if (Number.isNaN(d.getTime()) || ymd(d) < from || ymd(d) > until) continue;
     homeworkDue += 1;
     if (rows.length >= 8) continue;
-    const subj = subjectName(hw.subjectId);
     const hasTime = String(hw.due).includes("T");
     const hhmm = hasTime ? ` ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}` : "";
     rows.push({
       sort: 3e10 + d.getTime(),
-      line: `Homework: ${subj ? `${subj} — ` : ""}${hw.title} · ${WD[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}${hhmm}`,
+      line: `Homework · ${WD[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}${hhmm}`,
       kind: "homework",
     });
   }
@@ -228,10 +227,9 @@ function weekAhead(now, events, homework, todos, subjects) {
     if (Number.isNaN(d.getTime()) || ymd(d) < from || ymd(d) > until) continue;
     tasksDue += 1;
     if (rows.length >= 8) continue;
-    const subj = subjectName(t.subjectId);
     rows.push({
       sort: 4e10 + d.getTime(),
-      line: `Task: ${subj ? `${subj} — ` : ""}${t.title} · ${WD[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}`,
+      line: `Task · ${WD[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}`,
       kind: "task",
     });
   }
@@ -281,18 +279,16 @@ export default async ({ req, res, log, error }) => {
   const results = [];
   for (const userId of userIds) {
     try {
-      const [eventRows, homeworkRows, todoRows, subjectRows] = await Promise.all([
+      const [eventRows, homeworkRows, todoRows] = await Promise.all([
         listRows("events", userId),
         listRows("homeworks", userId),
         listRows("todos", userId),
-        listRows("subjects", userId),
       ]);
-      const subjects = subjectRows.filter((r) => r.deleted !== true);
       const events = eventRows.filter((r) => r.deleted !== true);
       const homework = homeworkRows.filter((r) => r.deleted !== true);
       const todos = todoRows.filter((r) => r.deleted !== true);
 
-      const week = weekAhead(now, events, homework, todos, subjects);
+      const week = weekAhead(now, events, homework, todos);
 
       if (week.total === 0 && !testMode) {
         log(`${userId.slice(0, 8)}… nothing ahead this week`);

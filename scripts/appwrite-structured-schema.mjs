@@ -59,7 +59,7 @@ const TABLES = [
     name: "Subjects",
     columns: [
       { type: "string", key: "userId", size: 64, required: true },
-      { type: "string", key: "name", size: 128, required: true },
+      { type: "string", key: "name", size: 1024, required: true },
       { type: "string", key: "color", size: 16, required: true },
       { type: "boolean", key: "deleted", required: false, default: false },
     ],
@@ -69,8 +69,8 @@ const TABLES = [
     name: "Todos",
     columns: [
       { type: "string", key: "userId", size: 64, required: true },
-      { type: "string", key: "title", size: 256, required: true },
-      { type: "string", key: "notes", size: 4000, required: false },
+      { type: "string", key: "title", size: 2048, required: true },
+      { type: "string", key: "notes", size: 32768, required: false },
       { type: "string", key: "due", size: 32, required: false },
       { type: "string", key: "priority", size: 16, required: false, default: "medium" },
       { type: "string", key: "subjectId", size: 64, required: false },
@@ -84,8 +84,8 @@ const TABLES = [
     name: "Homeworks",
     columns: [
       { type: "string", key: "userId", size: 64, required: true },
-      { type: "string", key: "title", size: 256, required: true },
-      { type: "string", key: "notes", size: 4000, required: false },
+      { type: "string", key: "title", size: 2048, required: true },
+      { type: "string", key: "notes", size: 32768, required: false },
       { type: "string", key: "due", size: 32, required: false },
       { type: "string", key: "priority", size: 16, required: false, default: "medium" },
       { type: "string", key: "subjectId", size: 64, required: false },
@@ -100,9 +100,10 @@ const TABLES = [
     columns: [
       { type: "string", key: "userId", size: 64, required: true },
       { type: "string", key: "subjectId", size: 64, required: false },
-      { type: "string", key: "title", size: 256, required: true },
-      { type: "integer", key: "points", required: true, min: 0, max: 15 },
-      { type: "float", key: "weight", required: true, min: 0, max: 1_000_000 },
+      { type: "string", key: "title", size: 2048, required: true },
+      // sealed ciphertext strings (grade numbers are private too)
+      { type: "string", key: "points", size: 256, required: true },
+      { type: "string", key: "weight", size: 256, required: true },
       { type: "string", key: "date", size: 16, required: false },
       { type: "boolean", key: "deleted", required: false, default: false },
     ],
@@ -112,12 +113,12 @@ const TABLES = [
     name: "Events",
     columns: [
       { type: "string", key: "userId", size: 64, required: true },
-      { type: "string", key: "title", size: 256, required: true },
+      { type: "string", key: "title", size: 2048, required: true },
       { type: "string", key: "date", size: 16, required: true },
       { type: "string", key: "time", size: 8, required: false },
       { type: "string", key: "type", size: 16, required: false, default: "event" },
       { type: "string", key: "subjectId", size: 64, required: false },
-      { type: "string", key: "notes", size: 4000, required: false },
+      { type: "string", key: "notes", size: 32768, required: false },
       { type: "boolean", key: "deleted", required: false, default: false },
     ],
   },
@@ -128,10 +129,10 @@ const TABLES = [
       { type: "string", key: "userId", size: 64, required: true },
       { type: "string", key: "day", size: 8, required: true },
       { type: "integer", key: "period", required: true, min: 0, max: 200 },
-      { type: "string", key: "time", size: 32, required: false },
-      { type: "string", key: "subject", size: 64, required: true },
-      { type: "string", key: "teacher", size: 64, required: false },
-      { type: "string", key: "room", size: 64, required: false },
+      { type: "string", key: "time", size: 256, required: false },
+      { type: "string", key: "subject", size: 512, required: true },
+      { type: "string", key: "teacher", size: 512, required: false },
+      { type: "string", key: "room", size: 512, required: false },
       { type: "boolean", key: "deleted", required: false, default: false },
     ],
   },
@@ -141,8 +142,8 @@ const TABLES = [
     columns: [
       { type: "string", key: "userId", size: 64, required: true },
       { type: "string", key: "role", size: 16, required: true },
-      { type: "string", key: "content", size: 100000, required: true },
-      { type: "string", key: "sources", size: 20000, required: false },
+      { type: "string", key: "content", size: 1048576, required: true },
+      { type: "string", key: "sources", size: 131072, required: false },
       { type: "integer", key: "sentAt", required: true, min: 0, max: 9_000_000_000_000 },
       { type: "boolean", key: "deleted", required: false, default: false },
     ],
@@ -152,7 +153,7 @@ const TABLES = [
     name: "Flashcard decks",
     columns: [
       { type: "string", key: "userId", size: 64, required: true },
-      { type: "string", key: "title", size: 256, required: true },
+      { type: "string", key: "title", size: 2048, required: true },
       { type: "string", key: "documentIds", size: 20000, required: false },
       { type: "integer", key: "createdAt", required: true, min: 0, max: 9_000_000_000_000 },
       { type: "integer", key: "updatedAt", required: true, min: 0, max: 9_000_000_000_000 },
@@ -165,8 +166,8 @@ const TABLES = [
     columns: [
       { type: "string", key: "userId", size: 64, required: true },
       { type: "string", key: "deckId", size: 64, required: true },
-      { type: "string", key: "front", size: 50000, required: true },
-      { type: "string", key: "back", size: 50000, required: false },
+      { type: "string", key: "front", size: 524288, required: true },
+      { type: "string", key: "back", size: 524288, required: false },
       { type: "boolean", key: "deleted", required: false, default: false },
     ],
   },
@@ -187,11 +188,11 @@ const TABLES = [
       { type: "string", key: "date", size: 16, required: true },
       { type: "string", key: "weekday", size: 8, required: false },
       { type: "string", key: "period", size: 8, required: false },
-      { type: "string", key: "course", size: 64, required: false },
-      { type: "string", key: "courseOld", size: 64, required: false },
-      { type: "string", key: "substitute", size: 64, required: false },
-      { type: "string", key: "room", size: 32, required: false },
-      { type: "string", key: "info", size: 256, required: false },
+      { type: "string", key: "course", size: 512, required: false },
+      { type: "string", key: "courseOld", size: 512, required: false },
+      { type: "string", key: "substitute", size: 512, required: false },
+      { type: "string", key: "room", size: 256, required: false },
+      { type: "string", key: "info", size: 2048, required: false },
       { type: "boolean", key: "cancelled", required: false, default: false },
       { type: "boolean", key: "deleted", required: false, default: false },
     ],
@@ -201,7 +202,7 @@ const TABLES = [
     name: "Portal courses",
     columns: [
       { type: "string", key: "userId", size: 64, required: true },
-      { type: "string", key: "course", size: 64, required: true },
+      { type: "string", key: "course", size: 512, required: true },
       { type: "boolean", key: "deleted", required: false, default: false },
     ],
   },
@@ -229,6 +230,24 @@ async function main() {
     // create missing columns
     const existing = await api("GET", `${tableBase}/${table.id}`);
     const have = new Set((existing.columns ?? []).map((c) => c.key));
+    // Sealed columns hold base64 ciphertext: worst case ≈4/3×(4×chars+28)+7 characters,
+    // since UTF-8 (umlauts, emoji) is up to 4 bytes per character. Tables created before
+    // E2EE still have the plaintext sizes, so widen them to what the app expects.
+    for (const col of existing.columns ?? []) {
+      const want = table.columns.find((c) => c.key === col.key);
+      if (!want) continue;
+      if (col.type !== want.type) {
+        console.warn(`  ${table.id}.${col.key} is ${col.type}, expected ${want.type} — delete and recreate it, then let sync refill it`);
+        continue;
+      }
+      if (col.type !== "string" || col.size >= want.size) continue;
+      try {
+        await api("PATCH", `${tableBase}/${table.id}/columns/string/${col.key}`, { size: want.size });
+        console.log(`  column ${col.key} widened ${col.size} → ${want.size}`);
+      } catch (e) {
+        console.warn(`  widen ${table.id}.${col.key} to ${want.size} failed: ${e.message}`);
+      }
+    }
     for (const col of table.columns) {
       if (have.has(col.key)) continue;
       const path = `${tableBase}/${table.id}/columns/${col.type}`;

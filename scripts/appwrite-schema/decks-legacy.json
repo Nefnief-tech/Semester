@@ -1,0 +1,42 @@
+{
+  "name": "Decks",
+  "id": "decks",
+  "attributes": [
+    {
+      "key": "userId",
+      "type": "string",
+      "required": true,
+      "size": 64
+    },
+    {
+      "key": "deckId",
+      "type": "string",
+      "required": true,
+      "size": 64
+    },
+    {
+      "key": "title",
+      "type": "string",
+      "size": 256
+    },
+    {
+      "key": "documentIds",
+      "type": "string",
+      "size": 100000
+    },
+    {
+      "key": "cards",
+      "type": "string",
+      "size": 1000000
+    },
+    {
+      "key": "createdAt",
+      "type": "integer"
+    },
+    {
+      "key": "updatedAt",
+      "type": "integer"
+    }
+  ],
+  "documents": []
+}

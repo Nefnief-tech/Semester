@@ -50,6 +50,8 @@ interface SyncMetaState {
   markLoaded: (key: string) => void;
   isLoaded: (key: string) => boolean;
   setRowDigests: (store: string, digests: Record<string, string>) => void;
+  /** forget every row digest — forces a full re-push (used when encryption is switched on) */
+  clearRowDigests: () => void;
   clearDirty: (key: string) => void;
 }
 
@@ -65,6 +67,7 @@ export const useSyncMetaStore = create<SyncMetaState>()(
       isLoaded: (key) => get().loaded.includes(key),
       setRowDigests: (store, digests) =>
         set((s) => ({ rowDigests: { ...s.rowDigests, [store]: digests } })),
+      clearRowDigests: () => set({ rowDigests: {} }),
       clearDirty: (key) =>
         set((s) => {
           const dirtyAt = { ...s.dirtyAt };

@@ -1,0 +1,46 @@
+{
+  "name": "Grades",
+  "id": "grades",
+  "attributes": [
+    {
+      "key": "userId",
+      "type": "string",
+      "required": true,
+      "size": 64
+    },
+    {
+      "key": "subjectId",
+      "type": "string",
+      "size": 64
+    },
+    {
+      "key": "title",
+      "type": "string",
+      "required": true,
+      "size": 2048
+    },
+    {
+      "key": "points",
+      "type": "string",
+      "required": true,
+      "size": 256
+    },
+    {
+      "key": "weight",
+      "type": "string",
+      "required": true,
+      "size": 256
+    },
+    {
+      "key": "date",
+      "type": "string",
+      "size": 16
+    },
+    {
+      "key": "deleted",
+      "type": "boolean",
+      "default": false
+    }
+  ],
+  "documents": []
+}

@@ -1,0 +1,23 @@
+{
+  "name": "Chats",
+  "id": "chats",
+  "attributes": [
+    {
+      "key": "userId",
+      "type": "string",
+      "required": true,
+      "size": 64
+    },
+    {
+      "key": "messages",
+      "type": "string",
+      "required": true,
+      "size": 1000000
+    },
+    {
+      "key": "updatedAt",
+      "type": "integer"
+    }
+  ],
+  "documents": []
+}

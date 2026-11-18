@@ -9,6 +9,7 @@ import '../services/widgets.dart';
 import '../stores/registry.dart';
 import '../theme/app_theme.dart';
 import '../widgets/controls.dart';
+import '../widgets/encryption_dialogs.dart';
 import '../widgets/motion.dart';
 import 'calendar_page.dart';
 import 'dashboard_page.dart';
@@ -75,7 +76,9 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    initSync();
+    initSync().then((_) {
+      if (mounted) showEncryptionDialogs(context);
+    });
     SemesterApi.refreshDocuments();
     PushService.init();
     // home-screen widgets follow the stores (agenda + today's timetable)

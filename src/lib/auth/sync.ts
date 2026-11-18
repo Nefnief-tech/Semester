@@ -1,6 +1,7 @@
 import { ID, AuthenticationFactor } from "appwrite";
 import {
   DATABASE_ID,
+  ENDPOINT,
   account,
   appwriteClient,
   appwriteConfigured,
@@ -19,6 +20,8 @@ import { useTimetableStore, timetableRowId } from "@/lib/store/timetable";
 import { useStudyRoomStore } from "@/lib/store/studyroom";
 import { usePortalStore, portalSubRowId, portalCourseRowId } from "@/lib/store/portal";
 import { hashId } from "@/lib/utils";
+import { bootstrapEncryption, dataKey, lockEncryption, useKeyringStore } from "@/lib/crypto/keyring";
+import { decryptRow, encryptRow, needsSealing } from "@/lib/crypto/rows";
 import { reconcileAppearance, subscribeAppearanceSync } from "./appearance-sync";
 import type {
   Deck,
@@ -54,7 +57,7 @@ const PUSH_DEBOUNCE_MS = 1200;
 const MAX_CHAT_MESSAGES = 120;
 
 /** REST base for row calls (the Dart/JS SDK models are bypassed — see git) */
-const REST_BASE = "https://fra.cloud.appwrite.io/v1";
+const REST_BASE = ENDPOINT;
 
 /* ================================================================== */
 /* ROW STORES                                                          */
@@ -474,11 +477,15 @@ async function restListRows(table: string, userId: string): Promise<Array<RowDat
 }
 
 async function restUpsertRow(table: string, rowId: string, data: RowData, userId: string) {
+  // nothing leaves the device readable: every text column is sealed first
+  const key = dataKey();
+  if (!key) throw new Error("encryption is locked — unlock to sync");
+  const sealed = await encryptRow(key, table, data);
   // PUT = create-or-update in one request (no 404 probe, no create race)
   const res = await rowFetch(rowsUri(table, rowId), {
     method: "PUT",
     body: JSON.stringify({
-      data,
+      data: sealed,
       permissions: [`read("user:${userId}")`, `write("user:${userId}")`],
     }),
   });
@@ -547,7 +554,10 @@ async function mergeRows(storeKey: string, rows: Array<RowData & { $id: string }
   const current = def.list();
   const byId = new Map(current.map((e) => [e.id, e]));
 
-  for (const row of rows) {
+  for (const rawRow of rows) {
+    // sealed text is opened before it reaches a store — plaintext rows from
+    // before encryption was switched on pass through unchanged
+    const row = await decryptRow(dataKey(), def.table, rawRow);
     const id = String(row.$id);
     if (row.deleted === true) {
       if (byId.has(id)) def.removeOne(id);
@@ -583,14 +593,21 @@ async function pullRows(storeKey: string, user: AuthUser) {
   const digests = { ...(useSyncMetaStore.getState().rowDigests[storeKey] ?? {}) };
   const localIds = new Set(def.list().map((e) => e.id));
   const cloudIds = new Set(rows.map((row) => String(row.$id)));
-  let vanished = false;
+  let mustPush = false;
   for (const id of Object.keys(digests)) {
     if (!cloudIds.has(id) && localIds.has(id)) {
       delete digests[id];
-      vanished = true;
+      mustPush = true;
     }
   }
-  if (vanished) {
+  // rows written before encryption was switched on arrive readable — dropping
+  // their digest makes the next push upload them sealed (in-place migration)
+  for (const row of rows) {
+    if (!needsSealing(def.table, row)) continue;
+    delete digests[String(row.$id)];
+    mustPush = true;
+  }
+  if (mustPush) {
     useSyncMetaStore.getState().setRowDigests(storeKey, digests);
     scheduleRowSync(storeKey);
   }
@@ -612,6 +629,12 @@ async function runReconcile(user: AuthUser) {
   reconciling = true;
   const auth = useAuthStore.getState();
   try {
+    // never push or merge while the key is missing: writing now would either
+    // leak plaintext or overwrite sealed rows with ciphertext-as-text
+    if (!dataKey()) {
+      auth.setSyncError("encryption locked — unlock to sync");
+      return;
+    }
     const failedRows: string[] = [];
     for (const key of ROW_STORE_KEYS) {
       try {
@@ -757,13 +780,17 @@ function handleRealtimeEvent(
 
   // another user's row — never merge it
   if (payload.userId !== user.id) return;
+  // locked: the sealed payload could not be opened, and merging it as text
+  // would put ciphertext into the store
+  if (!dataKey()) return;
 
-  if (event.includes("/tables/")) {
-    for (const [storeKey, table] of Object.entries(ROW_TABLES)) {
-      if (event.includes(`/tables/${table}/rows`)) {
-        void mergeRowEvent(storeKey, { ...payload, $id: String(payload.$id ?? "") });
-        return;
-      }
+  for (const [storeKey, table] of Object.entries(ROW_TABLES)) {
+    if (
+      event.includes(`/tables/${table}/rows`) ||
+      event.includes(`.tables.${table}.rows`)
+    ) {
+      void mergeRowEvent(storeKey, { ...payload, $id: String(payload.$id ?? "") });
+      return;
     }
   }
 }
@@ -974,6 +1001,14 @@ export async function initSync() {
   // the look applies before the row round-trip — a slow reconcile must
   // never delay it (appearance sync fails quietly on its own)
   void reconcileAppearance();
+  try {
+    // no password on a restored session: the device cache opens the key, and
+    // a cold device falls back to the unlock gate
+    await bootstrapEncryption(user.id);
+  } catch (err) {
+    console.warn("[e2ee] key restore failed:", err);
+    useKeyringStore.getState().setState({ status: "locked", key: null });
+  }
   startRealtime(user);
   await reconcile(user);
 }
@@ -1001,8 +1036,14 @@ async function availableMfaFactors(): Promise<{ email: boolean; totp: boolean }>
   }
 }
 
+/** the password only lives here for the duration of a sign-in (incl. MFA) */
+let pendingSignInPassword: string | undefined;
+
 export async function signIn(email: string, password: string) {
   if (!account) throw new Error("Auth is not configured");
+  // held only until the session is final (MFA included) so the data-key setup
+  // can derive from it; cleared in finalizeSignIn / cancelMfaSignIn
+  pendingSignInPassword = password;
   let mfaPending = false;
   try {
     const session = await account.createEmailPasswordSession(email, password);
@@ -1024,6 +1065,7 @@ export async function signIn(email: string, password: string) {
     if (mfaPending) {
       // creation worked but the profile read failed for another reason —
       // treat like before MFA existed (signed in, profile unknown)
+      pendingSignInPassword = undefined;
       useAuthStore.getState().setAuth(null, "signed-in");
       subscribeStores();
       return;
@@ -1041,10 +1083,19 @@ function isMfaFactorsError(err: unknown): boolean {
 /** shared tail of every sign-in path (plain, MFA-completed) */
 async function finalizeSignIn(user: AuthUser) {
   useAuthStore.getState().setAuth(user, "signed-in");
+  const password = pendingSignInPassword;
+  pendingSignInPassword = undefined;
   subscribeStores();
   subscribeAppearanceSync();
   void reconcileAppearance();
   startRealtime(user);
+  try {
+    await bootstrapEncryption(user.id, password);
+  } catch (err) {
+    // a failed key fetch must not block sign-in — the gate offers a retry
+    console.warn("[e2ee] key setup failed:", err);
+    useKeyringStore.getState().setState({ status: "locked", key: null });
+  }
   await reconcile(user);
 }
 
@@ -1074,6 +1125,7 @@ export async function confirmMfaSignIn(challengeId: string, otp: string) {
 
 /** drops the pending session when the user abandons the 2FA step */
 export async function cancelMfaSignIn() {
+  pendingSignInPassword = undefined;
   if (!account) return;
   await account.deleteSession("current").catch(() => {});
   try {
@@ -1117,4 +1169,5 @@ export async function signOut() {
     localStorage.removeItem("cookieFallback");
   } catch {}
   useAuthStore.getState().setAuth(null, "signed-out");
+  lockEncryption();
 }

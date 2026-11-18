@@ -4,13 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../appwrite/sync.dart';
+import '../crypto/keyring.dart';
 import '../services/push.dart';
 import '../stores/auth_store.dart';
 import '../stores/registry.dart';
 import '../theme/app_theme.dart';
 import '../utils/utils.dart';
 import 'controls.dart';
-
+import 'encryption_dialogs.dart';
 /// Port of AuthModal.tsx — sign in / create account / account management,
 /// plus the device-local server URL setting, push status, email verification,
 /// password recovery and two-factor authentication.
@@ -250,6 +251,10 @@ class _AuthPanelState extends State<AuthPanel> {
       }
       await PushService.onSignIn();
       _password.clear();
+      if (mounted) {
+        // new key → show the recovery code; cold device → unlock prompt
+        await showEncryptionDialogs(context);
+      }
       if (mounted) Navigator.of(context).pop();
     } on MfaRequiredException catch (e) {
       _password.clear();
@@ -378,6 +383,14 @@ class _AuthPanelState extends State<AuthPanel> {
                             : 'not synced yet',
                 style: Theme.of(context).textTheme.labelSmall,
               ),
+              // dismissed the unlock prompt? this is the way back
+              if (E2ee.instance.status == E2eeStatus.locked) ...[
+                const SizedBox(height: 10),
+                SemGhostButton(
+                  onPressed: () => showEncryptionDialogs(context),
+                  child: const Text('Unlock encrypted sync'),
+                ),
+              ],
               if (!Stores.I.auth.user!.emailVerified) ...[
                 const SizedBox(height: 4),
                 Text(

@@ -1,0 +1,35 @@
+{
+  "name": "Flashcards",
+  "id": "flashcards",
+  "attributes": [
+    {
+      "key": "userId",
+      "type": "string",
+      "required": true,
+      "size": 64
+    },
+    {
+      "key": "deckId",
+      "type": "string",
+      "required": true,
+      "size": 64
+    },
+    {
+      "key": "front",
+      "type": "string",
+      "required": true,
+      "size": 524288
+    },
+    {
+      "key": "back",
+      "type": "string",
+      "size": 524288
+    },
+    {
+      "key": "deleted",
+      "type": "boolean",
+      "default": false
+    }
+  ],
+  "documents": []
+}

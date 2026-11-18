@@ -1,0 +1,55 @@
+{
+  "name": "Todos",
+  "id": "todos",
+  "attributes": [
+    {
+      "key": "userId",
+      "type": "string",
+      "required": true,
+      "size": 64
+    },
+    {
+      "key": "title",
+      "type": "string",
+      "required": true,
+      "size": 2048
+    },
+    {
+      "key": "notes",
+      "type": "string",
+      "size": 32768
+    },
+    {
+      "key": "due",
+      "type": "string",
+      "size": 32
+    },
+    {
+      "key": "priority",
+      "type": "string",
+      "size": 16,
+      "default": "medium"
+    },
+    {
+      "key": "subjectId",
+      "type": "string",
+      "size": 64
+    },
+    {
+      "key": "done",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "createdAt",
+      "type": "integer",
+      "required": true
+    },
+    {
+      "key": "deleted",
+      "type": "boolean",
+      "default": false
+    }
+  ],
+  "documents": []
+}

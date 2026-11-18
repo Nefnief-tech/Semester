@@ -10,6 +10,9 @@ import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../crypto/keyring.dart';
+import '../crypto/rows.dart';
+
 import '../models/types.dart';
 import '../stores/auth_store.dart';
 import '../stores/portal_store.dart';
@@ -471,11 +474,13 @@ Future<void> _restUpsertRow({
 }) async {
   final jwt = await getJwt();
   if (jwt == null) throw Exception('row upsert without JWT (signed out?)');
-  http.Response res = await _putRow(jwt, table, rowId, row, userId);
+  // nothing leaves the device readable: every text column is sealed first
+  final sealed = await sealRow(table, row);
+  http.Response res = await _putRow(jwt, table, rowId, sealed, userId);
   if (res.statusCode == 401) {
     invalidateJwtCache(); // cached token expired. Mint a fresh one once
     final fresh = await getJwt();
-    if (fresh != null) res = await _putRow(fresh, table, rowId, row, userId);
+    if (fresh != null) res = await _putRow(fresh, table, rowId, sealed, userId);
   }
   if (res.statusCode < 200 || res.statusCode >= 300) {
     throw Exception('upsert $table/$rowId → ${res.statusCode}: ${res.body}');
@@ -563,7 +568,10 @@ Future<void> syncRowStore(AuthUser user, String storeKey) async {
   applyingRemote = true;
   try {
     for (final doc in rows.rows) {
-      final row = Map<String, dynamic>.from(doc.data);
+      // sealed text is opened before it reaches a store — plaintext rows from
+      // before encryption was switched on pass through unchanged
+      final raw = Map<String, dynamic>.from(doc.data);
+      final row = await openRow(adapter.table, raw);
       final id = doc.$id;
 
       if (row['deleted'] == true) {
@@ -584,7 +592,18 @@ Future<void> syncRowStore(AuthUser user, String storeKey) async {
 
       final entity = adapter.fromRow(id, row);
       adapter.upsert(entity);
-      digests[id] = _rowDigestOf({...adapter.toRow(entity), 'userId': user.id});
+      final localRow = {...adapter.toRow(entity), 'userId': user.id};
+      digests[id] = _rowDigestOf(localRow);
+      // a row written before encryption was switched on arrives readable —
+      // push it back sealed (in-place migration)
+      if (needsSealing(adapter.table, raw)) {
+        await _restUpsertRow(
+          table: adapter.table,
+          rowId: id,
+          row: localRow,
+          userId: user.id,
+        );
+      }
     }
 
     // rows that our digests claim are synced but the cloud no longer returns
@@ -727,6 +746,12 @@ Future<void> _runReconcile(AuthUser user) async {
   applyingRemote = true;
   final auth = Stores.I.auth;
   try {
+    // never push or merge while the key is missing: writing now would leak
+    // plaintext or overwrite sealed rows with ciphertext-as-text
+    if (!E2ee.instance.unlocked) {
+      auth.setSyncError('encryption locked — unlock to sync');
+      return;
+    }
     // every store: push local diffs, then pull + merge. On a fresh device
     // this is a pure pull — no local entities and no stored digests means the
     // push and deletion phases have nothing to do.
@@ -852,6 +877,14 @@ Future<void> initSync() async {
   }
   auth.setAuth(user, SyncStatus.signedIn);
   _subscribeStores();
+  try {
+    // no password on a restored session: the device cache opens the key, and
+    // a cold device falls back to the unlock gate
+    await E2ee.instance.bootstrap(user.id);
+  } catch (e) {
+    debugPrint('[e2ee] key restore failed: $e');
+    E2ee.instance.markLocked();
+  }
   _startRealtime(user);
   await reconcile(user);
 
@@ -868,7 +901,12 @@ Future<void> initSync() async {
   }
 }
 
+/// lives only for the duration of a sign-in (MFA included) so the data key
+/// can be derived from it; cleared once the session is final
+String? _pendingSignInPassword;
+
 Future<void> signIn(String email, String password) async {
+  _pendingSignInPassword = password;
   models.Session session;
   try {
     session = await account.createEmailPasswordSession(
@@ -897,6 +935,7 @@ Future<void> signIn(String email, String password) async {
   }
   if (user == null) {
     // belt & suspenders failed — the session exists but the profile doesn't load
+    _pendingSignInPassword = null;
     Stores.I.auth.setAuth(AuthUser('', email, email), SyncStatus.signedIn);
     _subscribeStores();
     return;
@@ -904,6 +943,14 @@ Future<void> signIn(String email, String password) async {
   await _persistUserId(user);
   Stores.I.auth.setAuth(user, SyncStatus.signedIn);
   _subscribeStores();
+  try {
+    await E2ee.instance.bootstrap(user.id, password: _pendingSignInPassword);
+  } catch (e) {
+    // a failed key fetch must not block sign-in — the gate offers a retry
+    debugPrint('[e2ee] key setup failed: $e');
+    E2ee.instance.markLocked();
+  }
+  _pendingSignInPassword = null;
   _startRealtime(user);
   await reconcile(user);
 }
@@ -948,12 +995,20 @@ Future<void> confirmMfaSignIn(String challengeId, String otp) async {
   await _persistUserId(user);
   Stores.I.auth.setAuth(user, SyncStatus.signedIn);
   _subscribeStores();
+  try {
+    await E2ee.instance.bootstrap(user.id, password: _pendingSignInPassword);
+  } catch (e) {
+    debugPrint('[e2ee] key setup failed: $e');
+    E2ee.instance.markLocked();
+  }
+  _pendingSignInPassword = null;
   _startRealtime(user);
   await reconcile(user);
 }
 
 /// drops the pending session when the user abandons the 2FA step
 Future<void> cancelMfaSignIn() async {
+  _pendingSignInPassword = null;
   try {
     await account.deleteSession(sessionId: 'current');
   } catch (_) {}
@@ -1035,7 +1090,9 @@ Future<void> signOut() async {
   _storedUserId = null;
   _storedUserEmail = null;
   invalidateJwtCache();
+  _pendingSignInPassword = null;
   Stores.I.auth.setAuth(null, SyncStatus.signedOut);
+  await E2ee.instance.lock();
 }
 
 /* ---------------- realtime (cross-device pulls) ---------------- */

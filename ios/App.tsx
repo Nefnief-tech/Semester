@@ -10,6 +10,7 @@ import { useFonts } from 'expo-font';
 
 import { AppShell } from './src/components/AppShell';
 import { ConfirmDialogHost } from './src/components/confirm_dialog';
+import { EncryptionGate } from './src/components/EncryptionGate';
 import { DateTimePickerHost } from './src/components/pickers';
 import { initLinks } from './src/lib/links';
 import { PushService } from './src/lib/push';
@@ -81,6 +82,7 @@ export default function App(): React.JSX.Element | null {
     <SemThemeProvider dark={effectiveDark}>
       <AppShell />
       <ConfirmDialogHost />
+      <EncryptionGate />
       <DateTimePickerHost />
     </SemThemeProvider>
   );

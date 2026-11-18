@@ -1,0 +1,30 @@
+{
+  "name": "Snapshots",
+  "id": "snapshots",
+  "attributes": [
+    {
+      "key": "userId",
+      "type": "string",
+      "required": true,
+      "size": 64
+    },
+    {
+      "key": "key",
+      "type": "string",
+      "required": true,
+      "size": 32
+    },
+    {
+      "key": "data",
+      "type": "string",
+      "required": true,
+      "size": 1000000
+    },
+    {
+      "key": "updatedAt",
+      "type": "integer",
+      "required": true
+    }
+  ],
+  "documents": []
+}

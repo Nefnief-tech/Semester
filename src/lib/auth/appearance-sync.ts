@@ -1,6 +1,7 @@
 "use client";
 
 import { account } from "./appwrite";
+import { updatePrefsMerged } from "./prefs";
 import { useAuthStore } from "@/lib/store/auth";
 import { useSettingsStore } from "@/lib/store/settings";
 import {
@@ -63,7 +64,7 @@ export async function pushAppearance(): Promise<void> {
   const prefs = (await account.getPrefs().catch(() => ({}))) as Record<string, unknown>;
   if (!s.syncAppearance) {
     if (prefs.appearance === undefined || prefs.appearance === null) return;
-    await account.updatePrefs({ ...prefs, appearance: null });
+    await updatePrefsMerged({ appearance: null });
     return;
   }
   const appearance: AppearancePrefs = {
@@ -73,7 +74,7 @@ export async function pushAppearance(): Promise<void> {
     grid: s.grid,
     motion: s.motion,
   };
-  await account.updatePrefs({ ...prefs, appearance });
+  await updatePrefsMerged({ appearance });
 }
 
 let applyingRemote = false;

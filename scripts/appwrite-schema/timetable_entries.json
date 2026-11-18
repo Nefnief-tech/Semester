@@ -1,0 +1,50 @@
+{
+  "name": "Timetable entries",
+  "id": "timetable_entries",
+  "attributes": [
+    {
+      "key": "userId",
+      "type": "string",
+      "required": true,
+      "size": 64
+    },
+    {
+      "key": "day",
+      "type": "string",
+      "required": true,
+      "size": 8
+    },
+    {
+      "key": "period",
+      "type": "integer",
+      "required": true
+    },
+    {
+      "key": "time",
+      "type": "string",
+      "size": 256
+    },
+    {
+      "key": "subject",
+      "type": "string",
+      "required": true,
+      "size": 512
+    },
+    {
+      "key": "teacher",
+      "type": "string",
+      "size": 512
+    },
+    {
+      "key": "room",
+      "type": "string",
+      "size": 512
+    },
+    {
+      "key": "deleted",
+      "type": "boolean",
+      "default": false
+    }
+  ],
+  "documents": []
+}

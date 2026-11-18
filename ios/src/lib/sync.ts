@@ -57,6 +57,8 @@ import { useSettingsStore } from '../stores/settings_store';
 import { useStudyroomStore } from '../stores/studyroom_store';
 import { useSubjectsStore } from '../stores/subjects_store';
 import { timetableRowId, useTimetableStore } from '../stores/timetable_store';
+import { bootstrapEncryption, dataKey, lockEncryption, useKeyringStore } from './crypto/keyring';
+import { decryptRow, needsSealing } from './crypto/rows';
 import { useTodosStore } from '../stores/todos_store';
 import { hashId } from '../utils/utils';
 
@@ -505,7 +507,10 @@ async function mergeRows(storeKey: string, rows: Array<RowData & { $id: string }
   const wasApplying = applyingRemote;
   applyingRemote = true;
   try {
-    for (const row of rows) {
+    for (const rawRow of rows) {
+      // sealed text is opened here, not in the HTTP helper, so a realtime
+      // single-row event takes the same path as a pull
+      const row = await decryptRow(dataKey(), def.table, rawRow);
       const id = String(row.$id);
       if (row.deleted === true) {
         if (byId.has(id)) def.removeRow(id);
@@ -539,14 +544,21 @@ async function pullRows(storeKey: string, user: AuthUser): Promise<void> {
   const digests = { ...(useSyncMetaStore.getState().rowDigests[storeKey] ?? {}) };
   const localIds = new Set(def.list().map((e) => e.id));
   const cloudIds = new Set(rows.map((row) => String(row.$id)));
-  let vanished = false;
+  let mustPush = false;
   for (const id of Object.keys(digests)) {
     if (!cloudIds.has(id) && localIds.has(id)) {
       delete digests[id];
-      vanished = true;
+      mustPush = true;
     }
   }
-  if (vanished) {
+  // rows written before encryption was switched on arrive readable — dropping
+  // their digest makes the next push upload them sealed (in-place migration)
+  for (const row of rows) {
+    if (!needsSealing(def.table, row)) continue;
+    delete digests[String(row.$id)];
+    mustPush = true;
+  }
+  if (mustPush) {
     useSyncMetaStore.getState().setRowDigests(storeKey, digests);
     scheduleRowSync(storeKey);
   }
@@ -558,6 +570,12 @@ let reconcileInFlight: Promise<void> = Promise.resolve();
 
 async function runReconcile(user: AuthUser): Promise<void> {
   const auth = useAuthStore.getState();
+  // never push or merge while the key is missing: writing now would either
+  // leak plaintext or overwrite sealed rows with ciphertext-as-text
+  if (!dataKey()) {
+    auth.setSyncError('encryption locked — unlock to sync');
+    return;
+  }
   const failed: string[] = [];
   for (const key of ROW_STORE_KEYS) {
     try {
@@ -783,6 +801,14 @@ export async function initSync(): Promise<void> {
   await persistUserId(user);
   useAuthStore.getState().setAuth(user, 'signed-in');
   subscribeStores();
+  try {
+    // no password on a restored session: the device cache opens the key, and
+    // a cold device falls back to the unlock gate
+    await bootstrapEncryption(user.id);
+  } catch (e) {
+    console.warn('[e2ee] key restore failed:', e);
+    useKeyringStore.getState().setState({ status: 'locked', key: null });
+  }
   startRealtime(user);
   await reconcile(user);
 
@@ -797,7 +823,12 @@ export async function initSync(): Promise<void> {
   }
 }
 
+/** held only until the session is final (MFA included) so the data-key setup
+ * can derive from it; cleared in the finalize paths and on cancel */
+let pendingSignInPassword: string | undefined;
+
 export async function signIn(email: string, password: string): Promise<void> {
+  pendingSignInPassword = password;
   try {
     await createEmailPasswordSession(email, password);
   } catch (e) {
@@ -817,6 +848,7 @@ export async function signIn(email: string, password: string): Promise<void> {
   }
   if (!user) {
     // belt & suspenders failed — the session exists but the profile doesn't load
+    pendingSignInPassword = undefined;
     useAuthStore.getState().setAuth(
       { id: '', email, name: email, emailVerified: false, mfa: false },
       'signed-in',
@@ -827,6 +859,14 @@ export async function signIn(email: string, password: string): Promise<void> {
   await persistUserId(user);
   useAuthStore.getState().setAuth(user, 'signed-in');
   subscribeStores();
+  try {
+    await bootstrapEncryption(user.id, pendingSignInPassword);
+  } catch (e) {
+    // a failed key fetch must not block sign-in — the gate offers a retry
+    console.warn('[e2ee] key setup failed:', e);
+    useKeyringStore.getState().setState({ status: 'locked', key: null });
+  }
+  pendingSignInPassword = undefined;
   startRealtime(user);
   await reconcile(user);
 }
@@ -856,12 +896,20 @@ export async function confirmMfaSignIn(challengeId: string, otp: string): Promis
   await persistUserId(user);
   useAuthStore.getState().setAuth(user, 'signed-in');
   subscribeStores();
+  try {
+    await bootstrapEncryption(user.id, pendingSignInPassword);
+  } catch (e) {
+    console.warn('[e2ee] key setup failed:', e);
+    useKeyringStore.getState().setState({ status: 'locked', key: null });
+  }
+  pendingSignInPassword = undefined;
   startRealtime(user);
   await reconcile(user);
 }
 
 /** drops the pending session when the user abandons the 2FA step */
 export async function cancelMfaSignIn(): Promise<void> {
+  pendingSignInPassword = undefined;
   try {
     await deleteCurrentSession();
   } catch {}
@@ -924,5 +972,7 @@ export async function signOut(): Promise<void> {
   await AsyncStorage.removeItem(USER_ID_KEY);
   await AsyncStorage.removeItem(USER_EMAIL_KEY);
   invalidateJwtCache();
+  pendingSignInPassword = undefined;
   useAuthStore.getState().setAuth(null, 'signed-out');
+  await lockEncryption();
 }

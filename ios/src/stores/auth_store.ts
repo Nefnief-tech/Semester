@@ -54,6 +54,8 @@ export interface SyncMetaState {
   /** last-synced content digests for row collections: {table: {rowId: hash}} */
   rowDigests: Record<string, Record<string, string>>;
   setRowDigests: (table: string, digests: Record<string, string>) => void;
+  /** forget every row digest — forces a full re-push (encryption switched on) */
+  clearRowDigests: () => void;
   markLoaded: (key: string) => void;
   markDirty: (key: string, at: number) => void;
   clearDirty: (key: string) => void;
@@ -67,6 +69,7 @@ export const useSyncMetaStore = create<SyncMetaState>()(
       rowDigests: {},
       setRowDigests: (table, digests) =>
         set((s) => ({ rowDigests: { ...s.rowDigests, [table]: digests } })),
+      clearRowDigests: () => set({ rowDigests: {} }),
       markLoaded: (key) => {
         if (get().loaded.includes(key)) return;
         set((s) => ({ loaded: [...s.loaded, key] }));

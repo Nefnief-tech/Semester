@@ -27,6 +27,7 @@ import ThemeToggle from "@/components/ui/ThemeToggle";
 import LangToggle from "@/components/ui/LangToggle";
 import CommandPalette from "@/components/ui/CommandPalette";
 import AppearanceSync from "@/components/ui/AppearanceSync";
+import EncryptionGate from "@/components/auth/EncryptionGate";
 
 const NAV: Array<{ href: Route; label: string; icon: LucideIcon }> = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
@@ -91,6 +92,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh">
       <AppearanceSync />
+      <EncryptionGate />
       <CommandPalette />
 
       {/* desktop sidebar */}

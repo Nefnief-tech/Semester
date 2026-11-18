@@ -1,0 +1,64 @@
+{
+  "name": "Portal substitute entries",
+  "id": "portal_entries",
+  "attributes": [
+    {
+      "key": "userId",
+      "type": "string",
+      "required": true,
+      "size": 64
+    },
+    {
+      "key": "date",
+      "type": "string",
+      "required": true,
+      "size": 16
+    },
+    {
+      "key": "weekday",
+      "type": "string",
+      "size": 8
+    },
+    {
+      "key": "period",
+      "type": "string",
+      "size": 8
+    },
+    {
+      "key": "course",
+      "type": "string",
+      "size": 512
+    },
+    {
+      "key": "courseOld",
+      "type": "string",
+      "size": 512
+    },
+    {
+      "key": "substitute",
+      "type": "string",
+      "size": 512
+    },
+    {
+      "key": "room",
+      "type": "string",
+      "size": 256
+    },
+    {
+      "key": "info",
+      "type": "string",
+      "size": 2048
+    },
+    {
+      "key": "cancelled",
+      "type": "boolean",
+      "default": false
+    },
+    {
+      "key": "deleted",
+      "type": "boolean",
+      "default": false
+    }
+  ],
+  "documents": []
+}

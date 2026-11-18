@@ -207,8 +207,9 @@ function createdMs(v) {
  * `addedToday` excludes items already listed in the due buckets, so nothing
  * appears twice. Long-overdue (back 21 days) is caught like in the digest.
  */
-function homeworkUpdate(now, homework, subjects) {
-  const subjectName = (id) => subjects.find((s) => s.id === id)?.name ?? null;
+/** Counts and timings only: titles and subject names are encrypted before
+ *  they reach the cloud, so a push must not try to read them. */
+function homeworkUpdate(now, homework) {
   const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 21);
   const end = addDays(now, 1);
   end.setHours(23, 59, 59, 999);
@@ -221,11 +222,9 @@ function homeworkUpdate(now, homework, subjects) {
     if (hw.done || hw.deleted === true || !hw.due) continue;
     const d = new Date(hw.due);
     if (Number.isNaN(d.getTime()) || d < start || d > end) continue;
-    const subj = subjectName(hw.subjectId);
     const hhmm = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
     const hasTime = String(hw.due).includes("T");
-    const title = `${subj ? `${subj}: ` : ""}${hw.title}`;
-    const line = `${d < now ? "OVERDUE" : "today"}${hasTime ? ` ${hhmm}` : ""} — ${title}${hw.priority === "high" ? " ‼️" : ""}`;
+    const line = `${d < now ? "OVERDUE" : "today"}${hasTime ? ` ${hhmm}` : ""}${hw.priority === "high" ? " ‼️" : ""}`;
     if (d < now) buckets.overdue.push({ id: hw.$id, sort: d.getTime(), line });
     else if (ymd(d) === ymd(now)) buckets.today.push({ id: hw.$id, sort: d.getTime(), line });
     else buckets.tomorrow.push({ id: hw.$id, sort: d.getTime(), line });
@@ -236,11 +235,10 @@ function homeworkUpdate(now, homework, subjects) {
     if (hw.done || hw.deleted === true || seen.has(hw.$id)) continue;
     const c = createdMs(hw.createdAt);
     if (c === null || c < midnight) continue;
-    const subj = subjectName(hw.subjectId);
     buckets.added.push({
       id: hw.$id,
       sort: c,
-      line: `new — ${subj ? `${subj}: ` : ""}${hw.title}${hw.due ? ` (due ${hw.due.replace("T", " ")})` : ""}`,
+      line: `new${hw.due ? ` · due ${hw.due.replace("T", " ")}` : ""}`,
     });
   }
 
@@ -305,14 +303,10 @@ export default async ({ req, res, log, error }) => {
   const results = [];
   for (const userId of userIds) {
     try {
-      const [homeworkRows, subjectRows] = await Promise.all([
-        listRows("homeworks", userId),
-        listRows("subjects", userId),
-      ]);
+      const homeworkRows = await listRows("homeworks", userId);
       const homework = homeworkRows.filter((r) => r.deleted !== true);
-      const subjects = subjectRows.filter((r) => r.deleted !== true);
 
-      const upd = homeworkUpdate(now, homework, subjects);
+      const upd = homeworkUpdate(now, homework);
 
       if (upd.lines.length === 0 && !testMode) {
         log(`${userId.slice(0, 8)}… ${slot}: nothing open`);

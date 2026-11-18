@@ -1,0 +1,30 @@
+{
+  "name": "Subjects",
+  "id": "subjects",
+  "attributes": [
+    {
+      "key": "userId",
+      "type": "string",
+      "required": true,
+      "size": 64
+    },
+    {
+      "key": "name",
+      "type": "string",
+      "required": true,
+      "size": 1024
+    },
+    {
+      "key": "color",
+      "type": "string",
+      "required": true,
+      "size": 16
+    },
+    {
+      "key": "deleted",
+      "type": "boolean",
+      "default": false
+    }
+  ],
+  "documents": []
+}
